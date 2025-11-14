@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from utils.config import get_config
+from routers import registration, recognition
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -20,6 +21,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(registration.router)
+app.include_router(recognition.router)
 
 @app.get("/")
 async def root():
