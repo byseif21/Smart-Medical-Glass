@@ -11,14 +11,21 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-// Create Supabase client
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-  },
-});
+// Create Supabase client (use dummy values if not configured)
+const defaultUrl = 'https://placeholder.supabase.co';
+const defaultKey = 'placeholder-key';
+
+export const supabase = createClient(
+  supabaseUrl || defaultUrl,
+  supabaseAnonKey || defaultKey,
+  {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+    },
+  }
+);
 
 /**
  * Sign in with email and password
