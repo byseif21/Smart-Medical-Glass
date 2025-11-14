@@ -20,7 +20,7 @@ const LoadingSpinner = ({ size = 'md', message = 'Loading...' }) => {
             boxShadow: '0 0 20px rgba(255, 0, 110, 0.5), 0 0 40px rgba(0, 217, 255, 0.3)',
           }}
         ></div>
-        
+
         {/* Inner glow effect */}
         <div
           className={`absolute inset-0 ${spinnerSize} rounded-full`}
@@ -34,9 +34,7 @@ const LoadingSpinner = ({ size = 'md', message = 'Loading...' }) => {
       {/* Loading Message */}
       {message && (
         <div className="text-center">
-          <p className="text-white font-medium animate-pulse">
-            {message}
-          </p>
+          <p className="text-white font-medium animate-pulse">{message}</p>
           <div className="flex justify-center space-x-1 mt-2">
             <span
               className="w-2 h-2 bg-pink-500 rounded-full animate-bounce"

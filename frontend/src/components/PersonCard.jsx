@@ -6,9 +6,7 @@ const PersonCard = ({ user, confidence, imageUrl }) => {
     <div className="glass-card hover-lift p-6 max-w-md mx-auto">
       {/* Header with confidence score */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl font-bold text-glow-pink">
-          Person Recognized
-        </h3>
+        <h3 className="text-xl font-bold text-glow-pink">Person Recognized</h3>
         {confidence !== undefined && (
           <div className="glass-card-dark px-3 py-1 rounded-full">
             <span className="text-sm font-semibold neon-gradient-text">
@@ -36,48 +34,32 @@ const PersonCard = ({ user, confidence, imageUrl }) => {
         {/* Name */}
         {user?.name && (
           <div className="glass-card-dark p-3 rounded-lg">
-            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">
-              Name
-            </div>
-            <div className="text-lg font-semibold text-white">
-              {user.name}
-            </div>
+            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Name</div>
+            <div className="text-lg font-semibold text-white">{user.name}</div>
           </div>
         )}
 
         {/* Job/Role */}
         {user?.job && (
           <div className="glass-card-dark p-3 rounded-lg">
-            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">
-              Job / Role
-            </div>
-            <div className="text-lg font-semibold text-glow-blue">
-              {user.job}
-            </div>
+            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Job / Role</div>
+            <div className="text-lg font-semibold text-glow-blue">{user.job}</div>
           </div>
         )}
 
         {/* Email */}
         {user?.email && (
           <div className="glass-card-dark p-3 rounded-lg">
-            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">
-              Email
-            </div>
-            <div className="text-sm text-white break-all">
-              {user.email}
-            </div>
+            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Email</div>
+            <div className="text-sm text-white break-all">{user.email}</div>
           </div>
         )}
 
         {/* Phone */}
         {user?.phone && (
           <div className="glass-card-dark p-3 rounded-lg">
-            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">
-              Phone
-            </div>
-            <div className="text-sm text-white">
-              {user.phone}
-            </div>
+            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Phone</div>
+            <div className="text-sm text-white">{user.phone}</div>
           </div>
         )}
 
@@ -87,18 +69,14 @@ const PersonCard = ({ user, confidence, imageUrl }) => {
             <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">
               Additional Information
             </div>
-            <div className="text-sm text-white">
-              {user.additional_info}
-            </div>
+            <div className="text-sm text-white">{user.additional_info}</div>
           </div>
         )}
 
         {/* Registration Date */}
         {user?.created_at && (
           <div className="glass-card-dark p-3 rounded-lg">
-            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">
-              Registered
-            </div>
+            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Registered</div>
             <div className="text-sm text-white">
               {new Date(user.created_at).toLocaleDateString('en-US', {
                 year: 'numeric',

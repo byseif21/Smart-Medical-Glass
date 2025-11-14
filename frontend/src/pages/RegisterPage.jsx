@@ -11,8 +11,8 @@ const RegisterPage = () => {
             <span className="neon-gradient-text">Face Registration</span>
           </h1>
           <p className="text-white/80 text-lg max-w-2xl mx-auto">
-            Register your face with the Smart Glass AI system. Upload a clear photo
-            of your face and provide your information to get started.
+            Register your face with the Smart Glass AI system. Upload a clear photo of your face and
+            provide your information to get started.
           </p>
         </div>
 
@@ -21,9 +21,7 @@ const RegisterPage = () => {
 
         {/* Instructions */}
         <div className="glass-card mt-8 p-6">
-          <h3 className="text-xl font-semibold text-white mb-4">
-            Registration Tips:
-          </h3>
+          <h3 className="text-xl font-semibold text-white mb-4">Registration Tips:</h3>
           <ul className="text-white/80 space-y-2">
             <li className="flex items-start">
               <span className="text-pink-500 mr-2">•</span>

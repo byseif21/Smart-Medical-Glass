@@ -122,9 +122,7 @@ const RegisterForm = () => {
       const response = await registerUser(userData);
 
       if (response.success) {
-        setSuccessMessage(
-          `Registration successful! User ID: ${response.data.user_id || 'N/A'}`
-        );
+        setSuccessMessage(`Registration successful! User ID: ${response.data.user_id || 'N/A'}`);
         // Reset form
         setFormData({
           name: '',
@@ -135,9 +133,7 @@ const RegisterForm = () => {
         setImageFile(null);
         setImagePreview(null);
       } else {
-        setErrorMessage(
-          response.error || 'Registration failed. Please try again.'
-        );
+        setErrorMessage(response.error || 'Registration failed. Please try again.');
       }
     } catch (error) {
       setErrorMessage('An unexpected error occurred. Please try again.');
@@ -149,9 +145,7 @@ const RegisterForm = () => {
 
   return (
     <div className="glass-container max-w-2xl mx-auto">
-      <h2 className="text-3xl font-bold text-center mb-8 neon-gradient-text">
-        Register New User
-      </h2>
+      <h2 className="text-3xl font-bold text-center mb-8 neon-gradient-text">Register New User</h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Name Field */}
@@ -168,9 +162,7 @@ const RegisterForm = () => {
             className="glass-input w-full"
             placeholder="Enter your full name"
           />
-          {errors.name && (
-            <p className="text-pink-500 text-sm mt-1">{errors.name}</p>
-          )}
+          {errors.name && <p className="text-pink-500 text-sm mt-1">{errors.name}</p>}
         </div>
 
         {/* Job Field */}
@@ -187,9 +179,7 @@ const RegisterForm = () => {
             className="glass-input w-full"
             placeholder="Enter your job title or role"
           />
-          {errors.job && (
-            <p className="text-pink-500 text-sm mt-1">{errors.job}</p>
-          )}
+          {errors.job && <p className="text-pink-500 text-sm mt-1">{errors.job}</p>}
         </div>
 
         {/* Email Field */}
@@ -206,9 +196,7 @@ const RegisterForm = () => {
             className="glass-input w-full"
             placeholder="Enter your email address"
           />
-          {errors.email && (
-            <p className="text-pink-500 text-sm mt-1">{errors.email}</p>
-          )}
+          {errors.email && <p className="text-pink-500 text-sm mt-1">{errors.email}</p>}
         </div>
 
         {/* Phone Field */}
@@ -240,16 +228,11 @@ const RegisterForm = () => {
               onChange={handleImageChange}
               className="hidden"
             />
-            <label
-              htmlFor="image"
-              className="glass-button block text-center cursor-pointer"
-            >
+            <label htmlFor="image" className="glass-button block text-center cursor-pointer">
               {imageFile ? 'Change Photo' : 'Upload Photo'}
             </label>
-            {errors.image && (
-              <p className="text-pink-500 text-sm">{errors.image}</p>
-            )}
-            
+            {errors.image && <p className="text-pink-500 text-sm">{errors.image}</p>}
+
             {/* Image Preview */}
             {imagePreview && (
               <div className="glass-card p-4">
@@ -267,18 +250,14 @@ const RegisterForm = () => {
         {/* Success Message */}
         {successMessage && (
           <div className="glass-card p-4 border-2 border-green-500">
-            <p className="text-green-400 text-center font-medium">
-              {successMessage}
-            </p>
+            <p className="text-green-400 text-center font-medium">{successMessage}</p>
           </div>
         )}
 
         {/* Error Message */}
         {errorMessage && (
           <div className="glass-card p-4 border-2 border-pink-500">
-            <p className="text-pink-400 text-center font-medium">
-              {errorMessage}
-            </p>
+            <p className="text-pink-400 text-center font-medium">{errorMessage}</p>
           </div>
         )}
 
@@ -286,11 +265,7 @@ const RegisterForm = () => {
         {loading && <LoadingSpinner message="Registering user..." />}
 
         {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="neon-button w-full text-lg"
-        >
+        <button type="submit" disabled={loading} className="neon-button w-full text-lg">
           {loading ? 'Registering...' : 'Register'}
         </button>
       </form>

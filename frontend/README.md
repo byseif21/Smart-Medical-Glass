@@ -177,12 +177,43 @@ npm run build
 npm run preview
 ```
 
-### Lint
+### Code Quality
 
 ```bash
 # Run ESLint
 npm run lint
+
+# Fix ESLint errors automatically
+npm run lint:fix
+
+# Format code with Prettier
+npm run format
+
+# Check code formatting
+npm run format:check
+
+# Run TypeScript type checking
+npm run type-check
 ```
+
+## Development Tools
+
+This project includes professional development tools for code quality:
+
+- **ESLint**: Catches errors and enforces best practices
+- **Prettier**: Ensures consistent code formatting
+- **TypeScript**: Provides type safety (with JSX support)
+- **Husky**: Runs pre-commit hooks automatically
+- **lint-staged**: Lints and formats only changed files
+
+### Pre-commit Hooks
+
+Code is automatically linted and formatted before each commit. The commit will be blocked if there are unfixable errors.
+
+For detailed information, see:
+
+- [QUICK_START.md](./QUICK_START.md) - Quick reference guide
+- [DEVELOPMENT.md](./DEVELOPMENT.md) - Comprehensive development guide
 
 ## Features
 
@@ -262,6 +293,7 @@ Response:
 Handles user registration with face image upload.
 
 **Props:**
+
 ```typescript
 interface RegistrationFormProps {
   onSubmit: (data: RegistrationData) => Promise<void>;
@@ -269,6 +301,7 @@ interface RegistrationFormProps {
 ```
 
 **Features:**
+
 - Image upload with preview
 - Form validation
 - Error handling
@@ -279,6 +312,7 @@ interface RegistrationFormProps {
 Provides interface for testing face recognition.
 
 **Props:**
+
 ```typescript
 interface RecognitionTestProps {
   onRecognize: (image: File) => Promise<RecognitionResult>;
@@ -286,6 +320,7 @@ interface RecognitionTestProps {
 ```
 
 **Features:**
+
 - Image upload
 - Loading state
 - Result display
@@ -296,6 +331,7 @@ interface RecognitionTestProps {
 Displays recognized user information.
 
 **Props:**
+
 ```typescript
 interface UserInfoDisplayProps {
   user: UserData;
@@ -304,6 +340,7 @@ interface UserInfoDisplayProps {
 ```
 
 **Features:**
+
 - Formatted user data display
 - Confidence score visualization
 - Responsive card layout
@@ -403,7 +440,7 @@ describe('RegistrationForm', () => {
 
 - Ensure .env file exists and has correct format
 - Restart development server after changing .env
-- Use correct prefix (VITE_ for Vite, NEXT_PUBLIC_ for Next.js)
+- Use correct prefix (VITE* for Vite, NEXT_PUBLIC* for Next.js)
 
 ## Performance Optimization
 

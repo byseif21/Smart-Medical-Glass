@@ -33,13 +33,13 @@ const Navbar = () => {
     // Simple email/password sign in - you can customize this
     const email = prompt('Enter your email:');
     const password = prompt('Enter your password:');
-    
+
     if (email && password) {
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      
+
       if (error) {
         alert('Sign in failed: ' + error.message);
       }
@@ -55,9 +55,7 @@ const Navbar = () => {
           {/* Logo/Brand */}
           <div className="flex-shrink-0">
             <Link to="/" className="flex items-center space-x-2">
-              <span className="text-2xl font-bold neon-gradient-text">
-                Smart Glass AI
-              </span>
+              <span className="text-2xl font-bold neon-gradient-text">Smart Glass AI</span>
             </Link>
           </div>
 
@@ -99,21 +97,13 @@ const Navbar = () => {
               <div className="ml-4 flex items-center space-x-2">
                 {user ? (
                   <>
-                    <span className="text-sm text-gray-400 px-3">
-                      {user.email}
-                    </span>
-                    <button
-                      onClick={handleSignOut}
-                      className="glass-button text-sm"
-                    >
+                    <span className="text-sm text-gray-400 px-3">{user.email}</span>
+                    <button onClick={handleSignOut} className="glass-button text-sm">
                       Sign Out
                     </button>
                   </>
                 ) : (
-                  <button
-                    onClick={handleSignIn}
-                    className="neon-button text-sm"
-                  >
+                  <button onClick={handleSignIn} className="neon-button text-sm">
                     Sign In
                   </button>
                 )}
@@ -128,12 +118,7 @@ const Navbar = () => {
               className="glass-button p-2"
               aria-label="Toggle menu"
             >
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 {isMenuOpen ? (
                   <path
                     strokeLinecap="round"
@@ -197,9 +182,7 @@ const Navbar = () => {
             <div className="pt-4 border-t border-white/10 mt-4">
               {user ? (
                 <>
-                  <div className="px-3 py-2 text-sm text-gray-400">
-                    {user.email}
-                  </div>
+                  <div className="px-3 py-2 text-sm text-gray-400">{user.email}</div>
                   <button
                     onClick={() => {
                       handleSignOut();

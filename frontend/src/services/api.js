@@ -12,6 +12,7 @@ const api = axios.create({
 // Request interceptor for logging and error handling
 api.interceptors.request.use(
   (config) => {
+    // eslint-disable-next-line no-console
     console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
     return config;
   },
@@ -24,6 +25,7 @@ api.interceptors.request.use(
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => {
+    // eslint-disable-next-line no-console
     console.log(`API Response: ${response.status} ${response.config.url}`);
     return response;
   },

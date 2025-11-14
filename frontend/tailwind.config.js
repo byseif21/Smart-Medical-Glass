@@ -1,9 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
       colors: {
@@ -18,12 +15,12 @@ export default {
       boxShadow: {
         'neon-pink': '0 0 20px rgba(255, 0, 110, 0.5)',
         'neon-blue': '0 0 20px rgba(0, 217, 255, 0.5)',
-        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+        glass: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
       },
       backdropBlur: {
-        'glass': '10px',
+        glass: '10px',
       },
     },
   },
   plugins: [],
-}
+};

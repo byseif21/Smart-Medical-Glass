@@ -56,28 +56,32 @@
 /* Glowing Border Effects */
 .glow-border-pink {
   border: 2px solid rgba(255, 0, 110, 0.5);
-  box-shadow: 0 0 20px rgba(255, 0, 110, 0.5),
-              inset 0 0 20px rgba(255, 0, 110, 0.1);
+  box-shadow:
+    0 0 20px rgba(255, 0, 110, 0.5),
+    inset 0 0 20px rgba(255, 0, 110, 0.1);
   transition: all 0.3s ease;
 }
 
 .glow-border-pink:hover {
   border-color: rgba(255, 0, 110, 0.8);
-  box-shadow: 0 0 30px rgba(255, 0, 110, 0.7),
-              inset 0 0 30px rgba(255, 0, 110, 0.2);
+  box-shadow:
+    0 0 30px rgba(255, 0, 110, 0.7),
+    inset 0 0 30px rgba(255, 0, 110, 0.2);
 }
 
 .glow-border-blue {
   border: 2px solid rgba(0, 217, 255, 0.5);
-  box-shadow: 0 0 20px rgba(0, 217, 255, 0.5),
-              inset 0 0 20px rgba(0, 217, 255, 0.1);
+  box-shadow:
+    0 0 20px rgba(0, 217, 255, 0.5),
+    inset 0 0 20px rgba(0, 217, 255, 0.1);
   transition: all 0.3s ease;
 }
 
 .glow-border-blue:hover {
   border-color: rgba(0, 217, 255, 0.8);
-  box-shadow: 0 0 30px rgba(0, 217, 255, 0.7),
-              inset 0 0 30px rgba(0, 217, 255, 0.2);
+  box-shadow:
+    0 0 30px rgba(0, 217, 255, 0.7),
+    inset 0 0 30px rgba(0, 217, 255, 0.2);
 }
 
 /* Neon Button Styles */
@@ -95,8 +99,9 @@
 
 .neon-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 30px rgba(255, 0, 110, 0.6),
-              0 0 40px rgba(0, 217, 255, 0.4);
+  box-shadow:
+    0 0 30px rgba(255, 0, 110, 0.6),
+    0 0 40px rgba(0, 217, 255, 0.4);
 }
 
 .neon-button:active {
@@ -131,24 +136,20 @@
 
 /* Dark Background with Gradient */
 .dark-gradient-bg {
-  background: linear-gradient(135deg, 
-    #0a0a0a 0%, 
-    #1a0a1a 25%, 
-    #0a1a2a 50%, 
-    #1a0a1a 75%, 
-    #0a0a0a 100%);
+  background: linear-gradient(
+    135deg,
+    #0a0a0a 0%,
+    #1a0a1a 25%,
+    #0a1a2a 50%,
+    #1a0a1a 75%,
+    #0a0a0a 100%
+  );
   min-height: 100vh;
 }
 
 /* Animated Gradient Background */
 .animated-gradient-bg {
-  background: linear-gradient(
-    -45deg,
-    #0a0a0a,
-    #1a0a1a,
-    #0a1a2a,
-    #1a0a1a
-  );
+  background: linear-gradient(-45deg, #0a0a0a, #1a0a1a, #0a1a2a, #1a0a1a);
   background-size: 400% 400%;
   animation: gradientShift 15s ease infinite;
 }
@@ -171,13 +172,16 @@
 }
 
 @keyframes pulseGlow {
-  0%, 100% {
-    box-shadow: 0 0 20px rgba(255, 0, 110, 0.4),
-                0 0 40px rgba(0, 217, 255, 0.2);
+  0%,
+  100% {
+    box-shadow:
+      0 0 20px rgba(255, 0, 110, 0.4),
+      0 0 40px rgba(0, 217, 255, 0.2);
   }
   50% {
-    box-shadow: 0 0 30px rgba(255, 0, 110, 0.6),
-                0 0 60px rgba(0, 217, 255, 0.4);
+    box-shadow:
+      0 0 30px rgba(255, 0, 110, 0.6),
+      0 0 60px rgba(0, 217, 255, 0.4);
   }
 }
 
@@ -216,21 +220,25 @@
 /* Neon Text Glow */
 .text-glow-pink {
   color: #ff006e;
-  text-shadow: 0 0 10px rgba(255, 0, 110, 0.8),
-               0 0 20px rgba(255, 0, 110, 0.6),
-               0 0 30px rgba(255, 0, 110, 0.4);
+  text-shadow:
+    0 0 10px rgba(255, 0, 110, 0.8),
+    0 0 20px rgba(255, 0, 110, 0.6),
+    0 0 30px rgba(255, 0, 110, 0.4);
 }
 
 .text-glow-blue {
   color: #00d9ff;
-  text-shadow: 0 0 10px rgba(0, 217, 255, 0.8),
-               0 0 20px rgba(0, 217, 255, 0.6),
-               0 0 30px rgba(0, 217, 255, 0.4);
+  text-shadow:
+    0 0 10px rgba(0, 217, 255, 0.8),
+    0 0 20px rgba(0, 217, 255, 0.6),
+    0 0 30px rgba(0, 217, 255, 0.4);
 }
 
 /* Hover Effects */
 .hover-lift {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 .hover-lift:hover {
@@ -243,7 +251,7 @@
   .glass-container {
     padding: 20px;
   }
-  
+
   .neon-button,
   .glass-button {
     padding: 10px 24px;
