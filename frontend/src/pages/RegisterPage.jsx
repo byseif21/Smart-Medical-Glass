@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import FaceCapture from '../components/FaceCapture';
+import MultiFaceCapture from '../components/MultiFaceCapture';
 import FaceUploader from '../components/FaceUploader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { registerPerson } from '../services/api';
@@ -46,8 +46,9 @@ const RegisterPage = () => {
     setStep(2);
   };
 
-  const handleFaceCapture = (imageFile) => {
-    setCapturedImage(imageFile);
+  const handleFaceCapture = (imageFiles) => {
+    // imageFiles can be either a single file (from FaceUploader) or object with multiple angles (from MultiFaceCapture)
+    setCapturedImage(imageFiles);
   };
 
   const handleSubmit = async () => {
@@ -68,7 +69,17 @@ const RegisterPage = () => {
       formDataToSend.append('nationality', formData.nationality);
       formDataToSend.append('gender', formData.gender);
       formDataToSend.append('id_number', formData.id_number);
-      formDataToSend.append('image', capturedImage);
+
+      // Handle multiple images from MultiFaceCapture or single image from FaceUploader
+      if (capturedImage instanceof File) {
+        // Single image from FaceUploader
+        formDataToSend.append('image', capturedImage);
+      } else if (typeof capturedImage === 'object') {
+        // Multiple images from MultiFaceCapture
+        Object.entries(capturedImage).forEach(([angle, file]) => {
+          formDataToSend.append(`image_${angle}`, file);
+        });
+      }
 
       const result = await registerPerson(formDataToSend);
 
@@ -311,7 +322,7 @@ const RegisterPage = () => {
                     </svg>
                     Back
                   </button>
-                  <FaceCapture onCapture={handleFaceCapture} />
+                  <MultiFaceCapture onComplete={handleFaceCapture} />
                 </div>
               ) : (
                 <div>
@@ -337,7 +348,10 @@ const RegisterPage = () => {
                 <div className="mt-6">
                   <div className="p-4 bg-green-50 border border-green-200 rounded-lg mb-4">
                     <p className="text-green-600 text-sm text-center">
-                      ✓ Face photo captured successfully
+                      ✓ Face photos captured successfully
+                      {typeof capturedImage === 'object' &&
+                        !(capturedImage instanceof File) &&
+                        ` (${Object.keys(capturedImage).length} angles)`}
                     </p>
                   </div>
                   <button onClick={handleSubmit} className="w-full btn-medical-primary">
