@@ -1,186 +1,86 @@
-"""
-Recognition router for Smart Glass AI system.
-Handles face recognition from uploaded images.
-"""
+from fastapi import APIRouter, UploadFile, File, HTTPException
+import json
+import numpy as np
+from services.face_service import get_face_service
+from services.storage_service import get_supabase_service
+from utils.config import get_config
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, status
+router = APIRouter(prefix="/api", tags=["recognition"])
+settings = get_config()
 
-from ..models.user import (
-    RecognitionResponse,
-    ErrorResponse,
-    UserResponse
-)
-from ..services.face_service import get_face_service, FaceRecognitionError
-from ..services.storage_service import get_supabase_service, SupabaseError
-from ..utils.image_processor import ImageProcessor
-
-
-router = APIRouter(
-    prefix="/api",
-    tags=["recognition"]
-)
-
-
-@router.post(
-    "/recognize",
-    response_model=RecognitionResponse,
-    status_code=status.HTTP_200_OK,
-    responses={
-        400: {"model": ErrorResponse, "description": "Bad request - invalid input or face detection error"},
-        503: {"model": ErrorResponse, "description": "Service unavailable - database connection error"}
-    }
-)
-async def recognize_face(
-    image: UploadFile = File(..., description="Face image file (JPEG or PNG)")
-):
+@router.post("/recognize")
+async def recognize_face(image: UploadFile = File(...)):
     """
-    Recognize a face from an uploaded image.
-    
-    This endpoint:
-    1. Validates the uploaded image
-    2. Extracts face encoding from the image
-    3. Loads encodings from local JSON cache
-    4. Finds matching face using face matching logic
-    5. Retrieves full user data from Supabase if match found
-    6. Returns recognition result with user data and confidence score
-    
-    Requirements: 5.1, 5.2
+    Recognize a person from their face image.
+    Returns complete profile if match found.
     """
-    # Initialize services
+    supabase = get_supabase_service()
     face_service = get_face_service()
-    storage_service = get_supabase_service()
     
     try:
-        # Validate image file
-        if not image.content_type or not image.content_type.startswith('image/'):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail={
-                    "success": False,
-                    "error": {
-                        "code": "INVALID_FILE_TYPE",
-                        "message": "File must be an image (JPEG or PNG)",
-                        "details": {"content_type": image.content_type}
-                    }
-                }
-            )
+        # Read and process image
+        image_data = await image.read()
         
-        # Read image bytes
-        image_bytes = await image.read()
+        # Extract face encoding
+        encoding = face_service.extract_face_encoding(image_data)
         
-        # Validate image size
-        if not ImageProcessor.validate_image_size(image_bytes):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail={
-                    "success": False,
-                    "error": {
-                        "code": "IMAGE_TOO_LARGE",
-                        "message": f"Image size exceeds maximum allowed size",
-                        "details": {}
-                    }
-                }
-            )
+        if encoding is None:
+            raise HTTPException(status_code=400, detail="No face detected in the image")
         
-        # Extract face encoding from image
-        extraction_result = face_service.extract_encoding(image_bytes)
+        # Get all users with face encodings
+        response = supabase.client.table('users').select('*').not_.is_('face_encoding', 'null').execute()
         
-        if not extraction_result.success:
-            # Determine error code based on error message
-            if "No face detected" in extraction_result.error:
-                error_code = "NO_FACE_DETECTED"
-            elif "Multiple faces" in extraction_result.error:
-                error_code = "MULTIPLE_FACES_DETECTED"
-            else:
-                error_code = "FACE_EXTRACTION_FAILED"
+        if not response.data:
+            return {
+                "success": False,
+                "match": False,
+                "message": "No registered users found"
+            }
+        
+        # Find best match
+        best_match = None
+        best_distance = float('inf')
+        
+        for user in response.data:
+            if user['face_encoding']:
+                stored_encoding = np.array(json.loads(user['face_encoding']))
+                distance = face_service.compare_faces(encoding, stored_encoding)
+                
+                if distance < best_distance:
+                    best_distance = distance
+                    best_match = user
+        
+        # Check if match is good enough
+        if best_match and best_distance < settings.FACE_RECOGNITION_TOLERANCE:
+            # Get medical info
+            medical_response = supabase.client.table('medical_info').select('*').eq('user_id', best_match['id']).execute()
+            medical_info = medical_response.data[0] if medical_response.data else {}
             
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail={
-                    "success": False,
-                    "error": {
-                        "code": error_code,
-                        "message": extraction_result.error,
-                        "details": {"face_count": extraction_result.face_count}
-                    }
-                }
-            )
-        
-        # At this point, we have a valid face encoding
-        encoding = extraction_result.encoding
-        
-        # Find matching face using face matching logic
-        match_result = face_service.find_match(encoding)
-        
-        if not match_result.matched:
-            # No match found
-            return RecognitionResponse(
-                recognized=False,
-                user=None,
-                confidence=None,
-                message="No matching face found"
-            )
-        
-        # Match found - retrieve full user data from Supabase
-        try:
-            user_data = storage_service.get_user(match_result.user_id)
+            # Get relatives
+            relatives_response = supabase.client.table('relatives').select('*').eq('user_id', best_match['id']).execute()
+            relatives = relatives_response.data if relatives_response.data else []
             
-            if user_data is None:
-                # User not found in database (data inconsistency)
-                return RecognitionResponse(
-                    recognized=False,
-                    user=None,
-                    confidence=None,
-                    message="Face matched but user data not found in database"
-                )
-            
-            return RecognitionResponse(
-                recognized=True,
-                user=user_data,
-                confidence=match_result.confidence,
-                message=None
-            )
-            
-        except SupabaseError as e:
-            # Failed to retrieve user data from database
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail={
-                    "success": False,
-                    "error": {
-                        "code": "DATABASE_ERROR",
-                        "message": "Failed to retrieve user data from database",
-                        "details": {"error": str(e)}
-                    }
-                }
-            )
-        
+            return {
+                "success": True,
+                "match": True,
+                "confidence": 1 - best_distance,
+                "name": best_match['name'],
+                "age": best_match.get('age'),
+                "gender": best_match.get('gender'),
+                "nationality": best_match.get('nationality'),
+                "id_number": best_match.get('id_number'),
+                "medical_info": medical_info,
+                "relatives": relatives
+            }
+        else:
+            return {
+                "success": True,
+                "match": False,
+                "message": "Face not recognized",
+                "confidence": 1 - best_distance if best_match else 0
+            }
+    
     except HTTPException:
-        # Re-raise HTTP exceptions as-is
         raise
-    except FaceRecognitionError as e:
-        # Handle face recognition service errors
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={
-                "success": False,
-                "error": {
-                    "code": "FACE_RECOGNITION_ERROR",
-                    "message": str(e),
-                    "details": {}
-                }
-            }
-        )
     except Exception as e:
-        # Catch any unexpected errors
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={
-                "success": False,
-                "error": {
-                    "code": "INTERNAL_ERROR",
-                    "message": "An unexpected error occurred during recognition",
-                    "details": {"error": str(e)}
-                }
-            }
-        )
+        raise HTTPException(status_code=500, detail=f"Recognition failed: {str(e)}")
