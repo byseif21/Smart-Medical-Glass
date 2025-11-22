@@ -2,6 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from utils.config import get_config
 from routers import registration, recognition
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -29,6 +34,24 @@ app.include_router(registration.router)
 app.include_router(recognition.router)
 app.include_router(auth.router)
 app.include_router(profile.router)
+
+# Run migrations on startup
+@app.on_event("startup")
+async def startup_event():
+    """Run database migrations and other startup tasks."""
+    logger.info("Starting Smart Glass AI API...")
+    
+    # Check and run database migrations
+    try:
+        from services.storage_service import get_supabase_service
+        from utils.migrations import run_migrations_on_startup
+        
+        supabase_service = get_supabase_service()
+        run_migrations_on_startup(supabase_service.client)
+    except Exception as e:
+        logger.error(f"Startup error: {e}")
+    
+    logger.info("Smart Glass AI API started successfully")
 
 @app.get("/")
 async def root():

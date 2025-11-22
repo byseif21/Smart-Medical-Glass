@@ -61,6 +61,8 @@ frontend/yarn-error.log*
 database/*.db
 database/*.sqlite
 database/*.sqlite3
+database/migrations/*.sql
+!database/migrations/.gitkeep
 
 # Logs
 *.log
