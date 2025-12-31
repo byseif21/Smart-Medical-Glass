@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import UserSearchInput from './UserSearchInput';
 import ExternalContactForm from './ExternalContactForm';
@@ -18,16 +18,30 @@ const AddConnectionModal = ({
   const [selectedRelationship, setSelectedRelationship] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Set initial state when editing
-  useState(() => {
-    if (editingContact) {
-      setActiveTab('external');
+  const isEditMode = !!editingContact;
+  const isEditingLinked = !!editingContact?.connected_user;
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (isEditMode) {
+      if (isEditingLinked) {
+        setActiveTab('search');
+        setSelectedUser(editingContact.connected_user);
+        setSelectedRelationship(editingContact.relationship || '');
+      } else {
+        setActiveTab('external');
+        setSelectedUser(null);
+        setSelectedRelationship('');
+      }
+    } else {
+      setActiveTab('search');
+      setSelectedUser(null);
+      setSelectedRelationship('');
     }
-  }, [editingContact]);
+  }, [isOpen, isEditMode, isEditingLinked, editingContact]);
 
   if (!isOpen) return null;
-
-  const isEditMode = !!editingContact;
 
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) {
@@ -70,6 +84,27 @@ const AddConnectionModal = ({
     }
   };
 
+  const handleUpdateLinkedConnection = async () => {
+    if (!selectedRelationship) {
+      alert('Please select a relationship type');
+      return;
+    }
+
+    if (isSubmitting) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await onUpdateConnection(editingContact.id, { relationship: selectedRelationship }, 'linked');
+    } catch (err) {
+      console.error('Error updating linked connection:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleAddExternalContact = async (contactData) => {
     // Prevent duplicate submissions
     if (isSubmitting) {
@@ -100,7 +135,7 @@ const AddConnectionModal = ({
     setIsSubmitting(true);
 
     try {
-      await onUpdateConnection(editingContact.id, contactData);
+      await onUpdateConnection(editingContact.id, contactData, 'external');
     } catch (err) {
       console.error('Error updating external contact:', err);
       throw err; // Re-throw to let form handle it
@@ -127,7 +162,7 @@ const AddConnectionModal = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-medical-gray-200">
           <h2 className="text-2xl font-semibold text-medical-dark">
-            {isEditMode ? 'Edit Contact' : 'Add Connection'}
+            {isEditMode ? (isEditingLinked ? 'Edit Connection' : 'Edit Contact') : 'Add Connection'}
           </h2>
           <button
             onClick={handleClose}
@@ -180,7 +215,31 @@ const AddConnectionModal = ({
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
-          {activeTab === 'search' && !isEditMode ? (
+          {isEditMode && isEditingLinked ? (
+            <div className="space-y-6">
+              <div className="p-4 bg-medical-light border border-medical-primary/20 rounded-lg">
+                <p className="text-sm text-medical-gray-600 mb-2">Connection:</p>
+                <p className="font-semibold text-medical-dark">
+                  {editingContact.connected_user?.name}
+                </p>
+                {editingContact.connected_user?.id && (
+                  <p className="text-xs text-medical-gray-500 font-mono">
+                    ID: {editingContact.connected_user.id.substring(0, 8).toUpperCase()}
+                  </p>
+                )}
+                {editingContact.connected_user?.email && (
+                  <p className="text-sm text-medical-gray-400">
+                    {editingContact.connected_user.email}
+                  </p>
+                )}
+              </div>
+
+              <RelationshipSelector
+                value={selectedRelationship}
+                onChange={setSelectedRelationship}
+              />
+            </div>
+          ) : activeTab === 'search' && !isEditMode ? (
             <div className="space-y-6">
               <UserSearchInput
                 onUserSelect={handleUserSelect}
@@ -221,7 +280,7 @@ const AddConnectionModal = ({
         </div>
 
         {/* Footer - Only show for search tab */}
-        {activeTab === 'search' && !isEditMode && (
+        {isEditMode && isEditingLinked ? (
           <div className="flex justify-end gap-3 p-6 border-t border-medical-gray-200">
             <button
               onClick={handleClose}
@@ -231,13 +290,33 @@ const AddConnectionModal = ({
               Cancel
             </button>
             <button
-              onClick={handleAddLinkedConnection}
-              disabled={!selectedUser || !selectedRelationship || isSubmitting}
+              onClick={handleUpdateLinkedConnection}
+              disabled={!selectedRelationship || isSubmitting}
               className="btn-medical-primary px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? 'Adding...' : 'Add Connection'}
+              {isSubmitting ? 'Updating...' : 'Update Connection'}
             </button>
           </div>
+        ) : (
+          activeTab === 'search' &&
+          !isEditMode && (
+            <div className="flex justify-end gap-3 p-6 border-t border-medical-gray-200">
+              <button
+                onClick={handleClose}
+                disabled={isSubmitting}
+                className="btn-medical-secondary px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddLinkedConnection}
+                disabled={!selectedUser || !selectedRelationship || isSubmitting}
+                className="btn-medical-primary px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? 'Adding...' : 'Add Connection'}
+              </button>
+            </div>
+          )
         )}
       </div>
     </div>

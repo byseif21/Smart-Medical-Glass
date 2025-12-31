@@ -118,12 +118,11 @@ const ConnectionCard = ({ connection, type, onEdit, onRemove, showActions }) => 
         {/* Action buttons */}
         {showActions && (
           <div className="flex gap-2 ml-4">
-            {/* Edit button - only for external contacts */}
-            {!isLinked && onEdit && (
+            {onEdit && (
               <button
                 onClick={() => onEdit(connection)}
                 className="p-2 text-medical-primary hover:bg-medical-light rounded-lg transition-colors"
-                title="Edit contact"
+                title={isLinked ? 'Edit connection' : 'Edit contact'}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path

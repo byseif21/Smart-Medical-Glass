@@ -95,11 +95,11 @@ const Connections = ({ onUpdate }) => {
     setShowAddModal(true);
   };
 
-  const handleUpdateContact = async (contactId, updatedData) => {
+  const handleUpdateContact = async (contactId, updatedData, connectionType) => {
     setError(null);
 
     try {
-      const result = await updateConnection(contactId, updatedData);
+      const result = await updateConnection(contactId, updatedData, connectionType);
 
       if (result.success) {
         setSuccessMessage('Connection updated successfully!');
@@ -230,6 +230,7 @@ const Connections = ({ onUpdate }) => {
                 key={connection.id}
                 connection={connection}
                 type="linked"
+                onEdit={handleEditContact}
                 onRemove={handleRemoveConnection}
                 showActions={true}
               />
