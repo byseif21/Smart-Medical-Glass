@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
 
-const ConnectionCard = ({ connection, type, onEdit, onRemove, showActions }) => {
+const ConnectionCard = ({ connection, type, onEdit, onRemove, showActions = false }) => {
   const isLinked = type === 'linked';
 
   return (
@@ -176,10 +176,6 @@ ConnectionCard.propTypes = {
   onEdit: PropTypes.func,
   onRemove: PropTypes.func,
   showActions: PropTypes.bool,
-};
-
-ConnectionCard.defaultProps = {
-  showActions: false,
 };
 
 export default ConnectionCard;

@@ -11,7 +11,7 @@ const AddConnectionModal = ({
   onUpdateConnection,
   editingContact,
   currentUserId,
-  existingConnections,
+  existingConnections = [],
 }) => {
   const [activeTab, setActiveTab] = useState('search'); // 'search' or 'external'
   const [selectedUser, setSelectedUser] = useState(null);
@@ -331,12 +331,6 @@ AddConnectionModal.propTypes = {
   editingContact: PropTypes.object,
   currentUserId: PropTypes.string,
   existingConnections: PropTypes.array,
-};
-
-AddConnectionModal.defaultProps = {
-  existingConnections: [],
-  editingContact: null,
-  onUpdateConnection: null,
 };
 
 export default AddConnectionModal;

@@ -2,7 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { searchUsers } from '../services/api';
 
-const UserSearchInput = ({ onUserSelect, selectedUser, currentUserId, existingConnections }) => {
+const UserSearchInput = ({
+  onUserSelect,
+  selectedUser = null,
+  currentUserId = null,
+  existingConnections = [],
+}) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -221,12 +226,6 @@ UserSearchInput.propTypes = {
   selectedUser: PropTypes.object,
   currentUserId: PropTypes.string,
   existingConnections: PropTypes.array,
-};
-
-UserSearchInput.defaultProps = {
-  selectedUser: null,
-  currentUserId: null,
-  existingConnections: [],
 };
 
 export default UserSearchInput;

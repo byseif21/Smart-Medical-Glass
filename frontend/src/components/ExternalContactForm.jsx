@@ -5,9 +5,9 @@ import RelationshipSelector from './RelationshipSelector';
 const ExternalContactForm = ({
   onSubmit,
   onCancel,
-  initialData,
-  isEditMode,
-  isSubmitting: externalIsSubmitting,
+  initialData = null,
+  isEditMode = false,
+  isSubmitting: externalIsSubmitting = false,
 }) => {
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
@@ -246,12 +246,6 @@ ExternalContactForm.propTypes = {
   initialData: PropTypes.object,
   isEditMode: PropTypes.bool,
   isSubmitting: PropTypes.bool,
-};
-
-ExternalContactForm.defaultProps = {
-  initialData: null,
-  isEditMode: false,
-  isSubmitting: false,
 };
 
 export default ExternalContactForm;
