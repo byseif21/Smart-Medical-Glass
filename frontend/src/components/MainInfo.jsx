@@ -27,7 +27,7 @@ const MainInfo = ({ profile, onUpdate, readOnly = false }) => {
 
     if (result.success) {
       setIsEditing(false);
-      onUpdate();
+      onUpdate({ silent: true });
     } else {
       alert('Failed to update: ' + result.error);
     }

@@ -15,7 +15,8 @@ const ProfileDashboard = () => {
   const navigate = useNavigate();
   const { userId: urlUserId } = useParams();
 
-  const loadProfile = async () => {
+  const loadProfile = async (options = {}) => {
+    const silent = !!options?.silent;
     // Check if viewing another user's profile or own profile
     const currentUserId = localStorage.getItem('user_id');
     const viewingUserId = urlUserId || currentUserId;
@@ -26,7 +27,7 @@ const ProfileDashboard = () => {
     }
 
     setIsViewingOther(urlUserId && urlUserId !== currentUserId);
-    setLoading(true);
+    if (!silent) setLoading(true);
     const result = await getProfile(viewingUserId);
 
     if (result.success) {
@@ -34,7 +35,7 @@ const ProfileDashboard = () => {
     } else {
       console.error('Failed to load profile:', result.error);
     }
-    setLoading(false);
+    if (!silent) setLoading(false);
   };
 
   const handleLogout = () => {
@@ -138,9 +139,7 @@ const ProfileDashboard = () => {
           {activeTab === 'medical' && (
             <MedicalInfo profile={profile} onUpdate={loadProfile} readOnly={isViewingOther} />
           )}
-          {activeTab === 'connections' && (
-            <Connections profile={profile} onUpdate={loadProfile} readOnly={isViewingOther} />
-          )}
+          {activeTab === 'connections' && <Connections />}
         </div>
       </main>
     </div>

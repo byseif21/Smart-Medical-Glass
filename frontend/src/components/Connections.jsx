@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
 import {
   getConnections,
   createLinkedConnection,
@@ -14,7 +13,7 @@ import ConnectionCard from './ConnectionCard';
 import AddConnectionModal from './AddConnectionModal';
 import LoadingSpinner from './LoadingSpinner';
 
-const Connections = ({ onUpdate }) => {
+const Connections = () => {
   const [loading, setLoading] = useState(false);
   const [linkedConnections, setLinkedConnections] = useState([]);
   const [externalContacts, setExternalContacts] = useState([]);
@@ -72,7 +71,6 @@ const Connections = ({ onUpdate }) => {
         setSuccessMessage('Connection request accepted!');
         await fetchConnections();
         await fetchPendingRequests();
-        if (onUpdate) onUpdate();
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
         setError(result.error || 'Failed to accept request');
@@ -120,14 +118,18 @@ const Connections = ({ onUpdate }) => {
       }
 
       if (result.success) {
-        setSuccessMessage('Connection added successfully!');
+        const message =
+          connectionData.type === 'linked'
+            ? 'Connection request sent successfully! Waiting for approval.'
+            : 'Contact added successfully!';
+
+        setSuccessMessage(message);
         setShowAddModal(false);
         setEditingContact(null);
         await fetchConnections();
-        if (onUpdate) onUpdate();
 
         // Clear success message after 3 seconds
-        setTimeout(() => setSuccessMessage(null), 3000);
+        setTimeout(() => setSuccessMessage(null), 5000);
       } else {
         setError(result.error || 'Failed to add connection. Please try again.');
         throw new Error(result.error);
@@ -156,7 +158,6 @@ const Connections = ({ onUpdate }) => {
         setEditingContact(null);
         setShowAddModal(false);
         await fetchConnections();
-        if (onUpdate) onUpdate();
 
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
@@ -187,11 +188,12 @@ const Connections = ({ onUpdate }) => {
       const result = await deleteConnection(connection.id);
 
       if (result.success) {
-        setSuccessMessage('Connection removed successfully!');
+        setSuccessMessage(
+          'Connection removed successfully! Any pending requests have also been cleared.'
+        );
         await fetchConnections();
-        if (onUpdate) onUpdate();
 
-        setTimeout(() => setSuccessMessage(null), 3000);
+        setTimeout(() => setSuccessMessage(null), 5000);
       } else {
         setError(result.error || 'Failed to remove connection. Please try again.');
         throw new Error(result.error);
@@ -413,10 +415,6 @@ const Connections = ({ onUpdate }) => {
       />
     </div>
   );
-};
-
-Connections.propTypes = {
-  onUpdate: PropTypes.func.isRequired,
 };
 
 export default Connections;

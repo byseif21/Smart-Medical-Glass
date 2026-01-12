@@ -26,7 +26,7 @@ const MedicalInfo = ({ profile, onUpdate }) => {
 
     if (result.success) {
       setIsEditing(false);
-      onUpdate();
+      onUpdate({ silent: true });
     } else {
       alert('Failed to update: ' + result.error);
     }
