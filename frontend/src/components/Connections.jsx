@@ -71,10 +71,11 @@ const Connections = () => {
     try {
       const result = await acceptConnectionRequest(requestId);
       if (result.success) {
-        setSuccessMessage('Connection request accepted!');
+        // TODO: integrate with global notification box instead of local successMessage
+        // setSuccessMessage('Connection request accepted!');
         await fetchConnections();
         await fetchPendingRequests();
-        setTimeout(() => setSuccessMessage(null), 3000);
+        // setTimeout(() => setSuccessMessage(null), 3000);
       } else {
         setError(result.error || 'Failed to accept request');
       }
@@ -88,9 +89,10 @@ const Connections = () => {
     try {
       const result = await rejectConnectionRequest(requestId);
       if (result.success) {
-        setSuccessMessage('Connection request rejected');
+        // TODO: integrate with global notification box instead of local successMessage
+        // setSuccessMessage('Connection request rejected');
         await fetchPendingRequests();
-        setTimeout(() => setSuccessMessage(null), 3000);
+        // setTimeout(() => setSuccessMessage(null), 3000);
       } else {
         setError(result.error || 'Failed to reject request');
       }
