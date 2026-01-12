@@ -23,11 +23,17 @@ RELATIONSHIP_TYPES = [
     "Other"
 ]
 
+# Phone validation
 def validate_phone_number(phone: str) -> bool:
+    """
+    Validate phone number format.
+    Accepts formats like: +1234567890, (123) 456-7890, 123-456-7890, 1234567890
+    """
     cleaned = re.sub(r'[\s\-\(\)]', '', phone)
     pattern = r'^\+?\d{10,15}$'
     return bool(re.match(pattern, cleaned))
 
+# Request/Response Models
 class CreateLinkedConnectionRequest(BaseModel):
     connected_user_id: str
     relationship: str
