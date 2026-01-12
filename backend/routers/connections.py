@@ -1,15 +1,12 @@
 from fastapi import APIRouter, HTTPException, Header, Depends
 from pydantic import BaseModel
 from typing import List, Optional
-#from datetime import datetime
+from datetime import datetime
 import re
 from services.storage_service import get_supabase_service
 
-# TODO: Replace X-User-ID header auth with proper JWT (Depends(get_current_user))
-
 router = APIRouter(prefix="/api/connections", tags=["connections"])
 
-# Predefined relationship types
 RELATIONSHIP_TYPES = [
     "Father",
     "Mother",
@@ -26,20 +23,11 @@ RELATIONSHIP_TYPES = [
     "Other"
 ]
 
-# Phone validation utility
 def validate_phone_number(phone: str) -> bool:
-    """
-    Validate phone number format.
-    Accepts formats like: +1234567890, (123) 456-7890, 123-456-7890, 1234567890
-    """
-    # Remove common separators and spaces
     cleaned = re.sub(r'[\s\-\(\)]', '', phone)
-    
-    # Check if it contains only digits and optional leading +
     pattern = r'^\+?\d{10,15}$'
     return bool(re.match(pattern, cleaned))
 
-# Request/Response Models
 class CreateLinkedConnectionRequest(BaseModel):
     connected_user_id: str
     relationship: str
@@ -76,7 +64,6 @@ class ConnectionRequestResponse(BaseModel):
     status: str
     created_at: str
 
-# Helper dependency for user auth
 def get_current_user_id(x_user_id: str = Header(None, alias="X-User-ID")) -> str:
     if not x_user_id:
         raise HTTPException(status_code=401, detail="User ID is required. Please log in again.")
@@ -87,58 +74,46 @@ async def create_connection_request(
     request: CreateLinkedConnectionRequest,
     current_user_id: str = Depends(get_current_user_id)
 ):
-    """Create a connection request to another registered user."""
     supabase = get_supabase_service()
     
     try:
         if request.relationship not in RELATIONSHIP_TYPES:
             raise HTTPException(status_code=400, detail="Invalid relationship type")
-        
         if current_user_id == request.connected_user_id:
             raise HTTPException(status_code=400, detail="Cannot connect to yourself")
-        
-        # 1. Check if already connected (Blocks redundant requests)
+
         existing_connection = supabase.client.table('user_connections').select('id').eq(
             'user_id', current_user_id
         ).eq('connected_user_id', request.connected_user_id).execute()
-        
         if existing_connection.data:
             raise HTTPException(status_code=409, detail="Connection already exists")
-            
-        # 2. Check for incoming requests (User should accept instead of requesting)
+
         incoming_req = supabase.client.table('connection_requests').select('id').eq(
             'sender_id', request.connected_user_id
         ).eq('receiver_id', current_user_id).eq('status', 'pending').execute()
-        
         if incoming_req.data:
             raise HTTPException(
                 status_code=409, 
                 detail="This user has already sent you a connection request. Please check your pending requests."
             )
 
-        # 3. Check for outgoing requests (Manage Pending/Rejected/Accepted states)
         outgoing_req = supabase.client.table('connection_requests').select('id, status').eq(
             'sender_id', current_user_id
         ).eq('receiver_id', request.connected_user_id).execute()
-        
         if outgoing_req.data:
             existing = outgoing_req.data[0]
             if existing['status'] == 'pending':
                 raise HTTPException(status_code=409, detail="Request already sent")
-            
-            # Recycle existing record if rejected or stale accepted
             update_data = {
                 "status": "pending",
                 "relationship": request.relationship,
                 "created_at": datetime.utcnow().isoformat()
             }
             supabase.client.table('connection_requests').update(update_data).eq('id', existing['id']).execute()
-            
             return CreateLinkedConnectionResponse(
                 success=True, message="Connection request sent successfully", request_id=existing['id']
             )
-            
-        # 4. Create new request
+
         new_req = supabase.client.table('connection_requests').insert({
             "sender_id": current_user_id,
             "receiver_id": request.connected_user_id,
@@ -148,24 +123,23 @@ async def create_connection_request(
         
         if not new_req.data:
             raise HTTPException(status_code=500, detail="Failed to create request")
-            
         return CreateLinkedConnectionResponse(
             success=True, message="Connection request sent successfully", request_id=new_req.data[0]['id']
         )
-    except HTTPException: raise
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/requests/pending", response_model=List[ConnectionRequestResponse])
 async def get_pending_requests(current_user_id: str = Depends(get_current_user_id)):
-    """Get pending connection requests for current user"""
     supabase = get_supabase_service()
-    
+
     try:
         response = supabase.client.table('connection_requests').select(
             'id, sender_id, relationship, status, created_at, users:sender_id(name, email)'
         ).eq('receiver_id', current_user_id).eq('status', 'pending').execute()
-        
+
         return [
             ConnectionRequestResponse(
                 id=req['id'],
@@ -183,27 +157,21 @@ async def get_pending_requests(current_user_id: str = Depends(get_current_user_i
 @router.post("/requests/{request_id}/accept")
 async def accept_request(request_id: str, current_user_id: str = Depends(get_current_user_id)):
     supabase = get_supabase_service()
-    
+
     try:
-        # Get request
         req_res = supabase.client.table('connection_requests').select('*').eq('id', request_id).execute()
         if not req_res.data: raise HTTPException(status_code=404, detail="Request not found")
-        
         request = req_res.data[0]
         if request['receiver_id'] != current_user_id:
             raise HTTPException(status_code=403, detail="Not authorized")
-            
-        # Create bidirectional connections
+
         connections = [
             {"user_id": request['sender_id'], "connected_user_id": request['receiver_id'], "relationship": request['relationship']},
             {"user_id": request['receiver_id'], "connected_user_id": request['sender_id'], "relationship": request['relationship']}
         ]
-        
+
         supabase.client.table('user_connections').insert(connections).execute()
-        
-        # Update request status
         supabase.client.table('connection_requests').update({"status": "accepted"}).eq('id', request_id).execute()
-        
         return {"success": True, "message": "Connection accepted"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -211,9 +179,8 @@ async def accept_request(request_id: str, current_user_id: str = Depends(get_cur
 @router.post("/requests/{request_id}/reject")
 async def reject_request(request_id: str, current_user_id: str = Depends(get_current_user_id)):
     supabase = get_supabase_service()
-    
+
     try:
-        # Update request status
         supabase.client.table('connection_requests').update({"status": "rejected"}).eq('id', request_id).eq('receiver_id', current_user_id).execute()
         return {"success": True, "message": "Connection rejected"}
     except Exception as e:

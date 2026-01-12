@@ -64,34 +64,43 @@ async def search_users(
     # Limit to 20 results
     users_list = users_list[:20]
     
-    # Get connection statuses if current_user_id is provided
     user_statuses = {}
     if current_user_id and users_list:
         try:
             target_ids = [u['id'] for u in users_list]
-            
-            # Check existing connections
-            connections = supabase.client.table('user_connections').select('connected_user_id').eq('user_id', current_user_id).in_('connected_user_id', target_ids).execute()
-            if connections.data:
-                for conn in connections.data:
-                    user_statuses[conn['connected_user_id']] = "connected"
-                
-            # Check pending requests sent BY current user
-            sent_requests = supabase.client.table('connection_requests').select('receiver_id').eq('sender_id', current_user_id).in_('receiver_id', target_ids).eq('status', 'pending').execute()
-            if sent_requests.data:
-                for req in sent_requests.data:
-                    user_statuses[req['receiver_id']] = "pending_sent"
-            
-            # Check pending requests received BY current user
-            received_requests = supabase.client.table('connection_requests').select('sender_id').eq('receiver_id', current_user_id).in_('sender_id', target_ids).eq('status', 'pending').execute()
-            if received_requests.data:
-                for req in received_requests.data:
-                    # Only set if not already set (though should be impossible to have both in pending)
-                    if req['sender_id'] not in user_statuses:
-                        user_statuses[req['sender_id']] = "pending_received"
+            connections = (
+                supabase.client.table('user_connections')
+                .select('connected_user_id')
+                .eq('user_id', current_user_id)
+                .in_('connected_user_id', target_ids)
+                .execute()
+            )
+            for conn in connections.data or []:
+                user_statuses[conn['connected_user_id']] = "connected"
+
+            sent_requests = (
+                supabase.client.table('connection_requests')
+                .select('receiver_id')
+                .eq('sender_id', current_user_id)
+                .in_('receiver_id', target_ids)
+                .eq('status', 'pending')
+                .execute()
+            )
+            for req in sent_requests.data or []:
+                user_statuses[req['receiver_id']] = "pending_sent"
+
+            received_requests = (
+                supabase.client.table('connection_requests')
+                .select('sender_id')
+                .eq('receiver_id', current_user_id)
+                .in_('sender_id', target_ids)
+                .eq('status', 'pending')
+                .execute()
+            )
+            for req in received_requests.data or []:
+                user_statuses.setdefault(req['sender_id'], "pending_received")
         except Exception as e:
             print(f"Error checking connection statuses: {e}")
-            # Continue with search results even if status check fails
     
     # Convert to response model
     search_results = [
