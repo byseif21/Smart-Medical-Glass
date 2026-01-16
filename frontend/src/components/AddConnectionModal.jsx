@@ -56,6 +56,7 @@ const AddConnectionModal = ({
   const handleAddLinkedConnection = async () => {
     // Validation
     if (!selectedUser || !selectedRelationship) {
+      // TODO: replace alert with GeneralModal
       alert('Please select a user and relationship type');
       return;
     }
@@ -86,6 +87,7 @@ const AddConnectionModal = ({
 
   const handleUpdateLinkedConnection = async () => {
     if (!selectedRelationship) {
+      // TODO: replace with GeneralModal
       alert('Please select a relationship type');
       return;
     }

@@ -4,9 +4,7 @@ Handles image loading, validation, and preprocessing.
 """
 
 import io
-import cv2
-import numpy as np
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Any
 from PIL import Image
 from .config import config
 
@@ -78,7 +76,7 @@ class ImageProcessor:
         return True
     
     @staticmethod
-    def load_image_from_bytes(image_bytes: bytes) -> np.ndarray:
+    def load_image_from_bytes(image_bytes: bytes):
         """
         Load image from bytes and convert to numpy array (RGB format).
         
@@ -92,18 +90,16 @@ class ImageProcessor:
             ImageProcessingError: If image cannot be loaded
         """
         try:
-            # Convert bytes to numpy array
+            try:
+                import numpy as np
+                import cv2
+            except Exception as dep_err:
+                raise ImageProcessingError(f"Image decoding requires numpy and opencv; {dep_err}")
             nparr = np.frombuffer(image_bytes, np.uint8)
-            
-            # Decode image using OpenCV
             image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            
             if image is None:
                 raise ImageProcessingError("Failed to decode image")
-            
-            # Convert BGR to RGB (OpenCV uses BGR by default)
             image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            
             return image_rgb
         except Exception as e:
             if isinstance(e, ImageProcessingError):
@@ -111,7 +107,7 @@ class ImageProcessor:
             raise ImageProcessingError(f"Failed to load image: {str(e)}")
     
     @staticmethod
-    def resize_image(image: np.ndarray, max_dimension: int = MAX_DIMENSION) -> np.ndarray:
+    def resize_image(image, max_dimension: int = MAX_DIMENSION):
         """
         Resize image while maintaining aspect ratio.
         Only resizes if image exceeds max_dimension.
@@ -123,6 +119,8 @@ class ImageProcessor:
         Returns:
             Resized numpy array
         """
+        import numpy as np
+        import cv2
         height, width = image.shape[:2]
         
         # Only resize if image exceeds max dimension
@@ -144,7 +142,7 @@ class ImageProcessor:
         return resized
     
     @staticmethod
-    def preprocess_image(image_bytes: bytes) -> np.ndarray:
+    def preprocess_image(image_bytes: bytes):
         """
         Complete preprocessing pipeline: validate, load, and resize image.
         
@@ -172,7 +170,7 @@ class ImageProcessor:
         return image
     
     @staticmethod
-    def get_image_dimensions(image: np.ndarray) -> Tuple[int, int]:
+    def get_image_dimensions(image) -> Tuple[int, int]:
         """
         Get image dimensions (width, height).
         
@@ -187,7 +185,7 @@ class ImageProcessor:
 
 
 # Convenience functions for direct use
-def validate_and_load_image(image_bytes: bytes) -> np.ndarray:
+def validate_and_load_image(image_bytes: bytes) -> Any:
     """
     Validate and load image in one step.
     

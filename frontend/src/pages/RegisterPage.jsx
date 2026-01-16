@@ -87,6 +87,8 @@ const RegisterPage = () => {
       const result = await registerUser(formDataToSend);
 
       if (result.success) {
+        // TODO: replace browser alert with GeneralModal component like Connections modal
+        // TODO: after successful registration, show custom success modal with next steps
         alert('Registration successful! You can now login.');
         navigate('/login');
       } else {

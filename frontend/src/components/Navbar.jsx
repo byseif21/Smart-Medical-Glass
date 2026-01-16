@@ -53,6 +53,7 @@ const Navbar = () => {
 
   const handleSignIn = async () => {
     // Simple email/password sign in - you can customize this
+    // TODO: replace prompt inputs with GeneralModal form for sign-in
     const email = prompt('Enter your email:');
     const password = prompt('Enter your password:');
 
@@ -63,6 +64,7 @@ const Navbar = () => {
       });
 
       if (error) {
+        // TODO: replace alert with GeneralModal for error feedback
         alert('Sign in failed: ' + error.message);
       }
     }

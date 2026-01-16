@@ -3,14 +3,19 @@ User data models for Smart Glass AI system.
 """
 
 from typing import Optional
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
+try:
+    import email_validator  # noqa: F401
+    from pydantic import EmailStr as EmailType
+except Exception:
+    EmailType = str
 from datetime import datetime
 
 
 class UserBase(BaseModel):
     """Base user model with common fields."""
     name: str = Field(..., min_length=1, max_length=255, description="User's full name")
-    email: EmailStr = Field(..., description="User's email address")
+    email: EmailType = Field(..., description="User's email address")
     phone: Optional[str] = Field(None, max_length=50, description="User's phone number")
 
 
@@ -32,7 +37,7 @@ class UserResponse(UserBase):
 class RegistrationRequest(BaseModel):
     """Model for registration request data (excluding image file)."""
     name: str = Field(..., min_length=1, max_length=255)
-    email: EmailStr
+    email: EmailType
     phone: Optional[str] = Field(None, max_length=50)
 
 

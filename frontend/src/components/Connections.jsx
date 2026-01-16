@@ -184,7 +184,8 @@ const Connections = () => {
       }
     }
   };
-
+  
+// TODO: unify in GeneralModal (consistent UX)
   const handleRemoveConnection = (connection) => {
     setConfirmTarget(connection);
     setConfirmOpen(true);

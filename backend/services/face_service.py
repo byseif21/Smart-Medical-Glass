@@ -3,8 +3,6 @@ Face recognition service for Smart Glass AI system.
 Handles face encoding extraction, storage, and matching.
 """
 
-import face_recognition
-import numpy as np
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import json
@@ -18,7 +16,6 @@ from models.face_encoding import (
     FaceEncodingWithMetadata,
     FaceEncodingStorage
 )
-from utils.image_processor import ImageProcessor, ImageProcessingError
 from utils.config import config
 
 
@@ -60,14 +57,27 @@ class FaceRecognitionService:
             FaceExtractionResult with encoding or error information
         """
         try:
-            # Preprocess image
+            try:
+                from utils.image_processor import ImageProcessor, ImageProcessingError
+            except Exception as import_err:
+                return FaceExtractionResult(
+                    success=False,
+                    encoding=None,
+                    error=f"Image processing dependencies not available: {str(import_err)}",
+                    face_count=0
+                )
             image = ImageProcessor.preprocess_image(image_bytes)
-            
-            # Detect face locations
-            face_locations = face_recognition.face_locations(image)
+            try:
+                import face_recognition as fr
+            except ImportError:
+                return FaceExtractionResult(
+                    success=False,
+                    encoding=None,
+                    error="face_recognition not installed",
+                    face_count=0
+                )
+            face_locations = fr.face_locations(image)
             face_count = len(face_locations)
-            
-            # Handle no face detected
             if face_count == 0:
                 return FaceExtractionResult(
                     success=False,
@@ -75,19 +85,14 @@ class FaceRecognitionService:
                     error="No face detected in image",
                     face_count=0
                 )
-            
-            # Handle multiple faces detected
             if face_count > 1:
                 return FaceExtractionResult(
                     success=False,
                     encoding=None,
-                    error=f"Multiple faces detected ({face_count}). Please upload image with single face",
+                    error=f"Multiple faces detected ({face_count})",
                     face_count=face_count
                 )
-            
-            # Extract face encoding
-            face_encodings = face_recognition.face_encodings(image, face_locations)
-            
+            face_encodings = fr.face_encodings(image, face_locations)
             if len(face_encodings) == 0:
                 return FaceExtractionResult(
                     success=False,
@@ -95,29 +100,18 @@ class FaceRecognitionService:
                     error="Failed to extract face encoding",
                     face_count=face_count
                 )
-            
-            # Convert numpy array to list for JSON serialization
             encoding = face_encodings[0].tolist()
-            
             return FaceExtractionResult(
                 success=True,
                 encoding=encoding,
                 error=None,
                 face_count=1
             )
-            
         except ImageProcessingError as e:
             return FaceExtractionResult(
                 success=False,
                 encoding=None,
-                error=f"Image processing error: {str(e)}",
-                face_count=0
-            )
-        except Exception as e:
-            return FaceExtractionResult(
-                success=False,
-                encoding=None,
-                error=f"Face extraction failed: {str(e)}",
+                error=str(e),
                 face_count=0
             )
     
@@ -222,6 +216,15 @@ class FaceRecognitionService:
             FaceMatch object with match result
         """
         try:
+            try:
+                import face_recognition as fr
+            except ImportError:
+                return FaceMatch(
+                    matched=False,
+                    user_id=None,
+                    confidence=None,
+                    distance=None
+                )
             # Load all stored encodings
             stored_encodings = self.load_encodings()
             
@@ -234,20 +237,21 @@ class FaceRecognitionService:
                 )
             
             # Convert encoding to numpy array
+            import numpy as np
             encoding_array = np.array(encoding)
             
             # Prepare arrays for comparison
             known_encodings = [np.array(enc.encoding) for enc in stored_encodings]
             
             # Compare faces
-            matches = face_recognition.compare_faces(
+            matches = fr.compare_faces(
                 known_encodings,
                 encoding_array,
                 tolerance=self.tolerance
             )
             
             # Calculate face distances
-            face_distances = face_recognition.face_distance(known_encodings, encoding_array)
+            face_distances = fr.face_distance(known_encodings, encoding_array)
             
             # Find best match
             best_match_index = None

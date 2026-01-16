@@ -1,6 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 import json
-import numpy as np
 from services.face_service import get_face_service
 from services.storage_service import get_supabase_service
 from utils.config import get_config
@@ -21,11 +20,10 @@ async def recognize_face(image: UploadFile = File(...)):
         # Read and process image
         image_data = await image.read()
         
-        # Extract face encoding
-        encoding = face_service.extract_face_encoding(image_data)
-        
-        if encoding is None:
-            raise HTTPException(status_code=400, detail="No face detected in the image")
+        result = face_service.extract_encoding(image_data)
+        if not result.success or result.encoding is None:
+            error_msg = result.error or "No face detected in the image"
+            raise HTTPException(status_code=400, detail=error_msg)
         
         # Get all users with face encodings
         response = supabase.client.table('users').select('*').not_.is_('face_encoding', 'null').execute()
@@ -37,38 +35,27 @@ async def recognize_face(image: UploadFile = File(...)):
                 "message": "No registered users found"
             }
         
-        # Find best match
-        best_match = None
-        best_distance = float('inf')
-        
-        for user in response.data:
-            if user['face_encoding']:
-                stored_encoding = np.array(json.loads(user['face_encoding']))
-                distance = face_service.compare_faces(encoding, stored_encoding)
-                
-                if distance < best_distance:
-                    best_distance = distance
-                    best_match = user
+        match_result = face_service.find_match(result.encoding)
         
         # Check if match is good enough
-        if best_match and best_distance < settings.FACE_RECOGNITION_TOLERANCE:
-            # Get medical info
-            medical_response = supabase.client.table('medical_info').select('*').eq('user_id', best_match['id']).execute()
+        if match_result.matched and match_result.user_id is not None:
+            user_resp = supabase.client.table('users').select('*').eq('id', match_result.user_id).execute()
+            if not user_resp.data:
+                raise HTTPException(status_code=404, detail="User not found")
+            user = user_resp.data[0]
+            medical_response = supabase.client.table('medical_info').select('*').eq('user_id', user['id']).execute()
             medical_info = medical_response.data[0] if medical_response.data else {}
-            
-            # Get relatives
-            relatives_response = supabase.client.table('relatives').select('*').eq('user_id', best_match['id']).execute()
+            relatives_response = supabase.client.table('relatives').select('*').eq('user_id', user['id']).execute()
             relatives = relatives_response.data if relatives_response.data else []
-            
             return {
                 "success": True,
                 "match": True,
-                "confidence": 1 - best_distance,
-                "name": best_match['name'],
-                "age": best_match.get('age'),
-                "gender": best_match.get('gender'),
-                "nationality": best_match.get('nationality'),
-                "id_number": best_match.get('id_number'),
+                "confidence": match_result.confidence,
+                "name": user['name'],
+                "age": user.get('age'),
+                "gender": user.get('gender'),
+                "nationality": user.get('nationality'),
+                "id_number": user.get('id_number'),
                 "medical_info": medical_info,
                 "relatives": relatives
             }
@@ -77,7 +64,7 @@ async def recognize_face(image: UploadFile = File(...)):
                 "success": True,
                 "match": False,
                 "message": "Face not recognized",
-                "confidence": 1 - best_distance if best_match else 0
+                "confidence": match_result.confidence or 0
             }
     
     except HTTPException:

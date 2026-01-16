@@ -1,6 +1,11 @@
 from fastapi import APIRouter, HTTPException, Depends, File, UploadFile, Form
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
+try:
+    import email_validator  # noqa: F401
+    from pydantic import EmailStr as EmailType
+except Exception:
+    EmailType = str
 from typing import Optional
 import bcrypt
 import jwt
@@ -15,7 +20,7 @@ security = HTTPBearer()
 settings = get_config()
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: EmailType
     password: str
 
 class LoginResponse(BaseModel):
