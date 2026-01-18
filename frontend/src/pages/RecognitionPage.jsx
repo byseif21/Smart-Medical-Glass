@@ -4,6 +4,7 @@ import FaceCapture from '../components/FaceCapture';
 import FaceUploader from '../components/FaceUploader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { recognizeFace } from '../services/api';
+import { computeAge } from '../utils/dateUtils';
 
 const RecognitionPage = () => {
   const [mode, setMode] = useState(null);
@@ -154,7 +155,9 @@ const RecognitionPage = () => {
                 <div className="grid md:grid-cols-2 gap-4 mb-6">
                   <div>
                     <p className="text-sm text-medical-gray-600">Age</p>
-                    <p className="font-medium text-medical-dark">{recognizedPerson.age || 'N/A'}</p>
+                    <p className="font-medium text-medical-dark">
+                      {computeAge(recognizedPerson.date_of_birth) || recognizedPerson.age || 'N/A'}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-medical-gray-600">Gender</p>

@@ -52,7 +52,7 @@ async def recognize_face(image: UploadFile = File(...)):
                 "match": True,
                 "confidence": match_result.confidence,
                 "name": user['name'],
-                "age": user.get('age'),
+                "date_of_birth": user.get('date_of_birth'),
                 "gender": user.get('gender'),
                 "nationality": user.get('nationality'),
                 "id_number": user.get('id_number'),

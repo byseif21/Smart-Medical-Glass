@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { updateMainInfo } from '../services/api';
+import { countries } from '../utils/countries';
 import LoadingSpinner from './LoadingSpinner';
+import { computeAge } from '../utils/dateUtils';
 
 const MainInfo = ({ profile, onUpdate, readOnly = false }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -10,7 +12,7 @@ const MainInfo = ({ profile, onUpdate, readOnly = false }) => {
   const [formData, setFormData] = useState({
     name: profile?.name || '',
     phone: profile?.phone || '',
-    age: profile?.age || '',
+    date_of_birth: profile?.date_of_birth || '',
     nationality: profile?.nationality || '',
     gender: profile?.gender || '',
     id_number: profile?.id_number || '',
@@ -39,7 +41,7 @@ const MainInfo = ({ profile, onUpdate, readOnly = false }) => {
     setFormData({
       name: profile?.name || '',
       phone: profile?.phone || '',
-      age: profile?.age || '',
+      date_of_birth: profile?.date_of_birth || '',
       nationality: profile?.nationality || '',
       gender: profile?.gender || '',
       id_number: profile?.id_number || '',
@@ -107,25 +109,42 @@ const MainInfo = ({ profile, onUpdate, readOnly = false }) => {
         <div>
           <label className="label-medical">Age</label>
           <input
-            type="number"
-            name="age"
-            value={formData.age}
-            onChange={handleChange}
-            disabled={!isEditing}
+            type="text"
+            value={computeAge(formData.date_of_birth)}
+            readOnly
             className="input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed"
           />
         </div>
 
+        {isEditing && (
+          <div>
+            <label className="label-medical">Birthday</label>
+            <input
+              type="date"
+              name="date_of_birth"
+              value={formData.date_of_birth}
+              onChange={handleChange}
+              className="input-medical"
+            />
+          </div>
+        )}
+
         <div>
           <label className="label-medical">Nationality</label>
-          <input
-            type="text"
+          <select
             name="nationality"
             value={formData.nationality}
             onChange={handleChange}
             disabled={!isEditing}
             className="input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed"
-          />
+          >
+            <option value="">Select Nationality</option>
+            {countries.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>
@@ -144,7 +163,7 @@ const MainInfo = ({ profile, onUpdate, readOnly = false }) => {
           </select>
         </div>
 
-        <div className="md:col-span-2">
+        <div className={isEditing ? 'md:col-span-2' : ''}>
           <label className="label-medical">Government ID</label>
           <input
             type="text"

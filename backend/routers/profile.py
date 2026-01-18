@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api/profile", tags=["profile"])
 class MainInfoUpdate(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
-    age: Optional[int] = None
+    date_of_birth: Optional[str] = None
     nationality: Optional[str] = None
     gender: Optional[str] = None
     id_number: Optional[str] = None
@@ -42,7 +42,7 @@ async def get_profile(user_id: str):
     
     try:
         # Get user basic info
-        user_response = supabase.client.table('users').select('id, name, email, phone, age, gender, nationality, id_number').eq('id', user_id).execute()
+        user_response = supabase.client.table('users').select('id, name, email, phone, date_of_birth, gender, nationality, id_number').eq('id', user_id).execute()
         
         if not user_response.data:
             raise HTTPException(status_code=404, detail="User not found")
