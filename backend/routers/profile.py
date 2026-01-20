@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from services.storage_service import get_supabase_service
 from services.profile_picture_service import get_profile_picture_url, ProfilePictureError
+from services.contact_service import get_emergency_contacts
 from routers.auth import get_current_user, verify_user_access
 
 router = APIRouter(prefix="/api/profile", tags=["profile"])
@@ -72,8 +73,7 @@ async def get_profile(user_id: str, current_user: dict = Depends(get_current_use
         if can_view_full:
             medical_response = supabase.client.table('medical_info').select('*').eq('user_id', user_id).execute()
             medical_info = medical_response.data[0] if medical_response.data else {}
-            relatives_response = supabase.client.table('relatives').select('*').eq('user_id', user_id).execute()
-            relatives = relatives_response.data if relatives_response.data else []
+            relatives = get_emergency_contacts(supabase.client, user_id)
 
             response_payload["medical_info"] = medical_info
             response_payload["relatives"] = relatives

@@ -2,6 +2,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 import json
 from services.face_service import get_face_service
 from services.storage_service import get_supabase_service
+from services.contact_service import get_emergency_contacts
 from utils.config import get_config
 from routers.auth import get_current_user
 
@@ -49,9 +50,8 @@ async def recognize_face(image: UploadFile = File(...), current_user: dict = Dep
             if role in ["doctor", "admin"]:
                 medical_response = supabase.client.table('medical_info').select('*').eq('user_id', user['id']).execute()
                 medical_info = medical_response.data[0] if medical_response.data else {}
-                response_payload["medical_info"] = medical_info
-                relatives_response = supabase.client.table('relatives').select('*').eq('user_id', user['id']).execute()
-                relatives = relatives_response.data if relatives_response.data else []
+                response_payload["medical_info"] = medical_info 
+                relatives = get_emergency_contacts(supabase.client, user['id'])
                 response_payload["relatives"] = relatives
             return response_payload
         else:
