@@ -6,7 +6,7 @@ try:
     from pydantic import EmailStr as EmailType
 except Exception:
     EmailType = str
-from typing import Optional
+from typing import Optional, Dict, Any
 import bcrypt
 import jwt
 from datetime import datetime, timedelta
@@ -27,6 +27,7 @@ class LoginResponse(BaseModel):
     user_id: str
     name: str
     email: str
+    role: str
     token: str
     message: str
 
@@ -67,12 +68,14 @@ async def login(credentials: LoginRequest):
             raise HTTPException(status_code=401, detail="Invalid email or password")
         
         # Create access token
-        token = create_access_token({"sub": user['id'], "email": user['email']})
+        role = user.get('role') or 'user'
+        token = create_access_token({"sub": user['id'], "email": user['email'], "role": role})
         
         return LoginResponse(
             user_id=user['id'],
             name=user['name'],
             email=user['email'],
+            role=role,
             token=token,
             message="Login successful"
         )
@@ -158,12 +161,14 @@ async def confirm_face_login(payload: FaceLoginConfirmRequest):
         if not verify_password(payload.password, user['password_hash']):
             raise HTTPException(status_code=401, detail="Invalid password")
 
-        token = create_access_token({"sub": user['id'], "email": user['email']})
+        role = user.get('role') or 'user'
+        token = create_access_token({"sub": user['id'], "email": user['email'], "role": role})
 
         return LoginResponse(
             user_id=user['id'],
             name=user['name'],
             email=user['email'],
+            role=role,
             token=token,
             message="Login successful"
         )
@@ -173,9 +178,9 @@ async def confirm_face_login(payload: FaceLoginConfirmRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
     """
-    Verify JWT token and return current user
+    Verify JWT token and return current user payload (including role)
     """
     try:
         token = credentials.credentials
@@ -183,8 +188,21 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         user_id: str = payload.get("sub")
         if user_id is None:
             raise HTTPException(status_code=401, detail="Invalid authentication credentials")
-        return user_id
+        return payload
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token has expired")
     except jwt.JWTError:
         raise HTTPException(status_code=401, detail="Could not validate credentials")
+
+def verify_user_access(current_user: dict, target_user_id: str):
+    """
+    Verify that the current user is authorized to access/modify the target user's data.
+    Allows access if:
+    1. current_user is the target_user (self-access)
+    2. current_user has 'admin' role
+    """
+    current_user_id = (current_user or {}).get("sub")
+    role = (current_user or {}).get("role") or "user"
+    
+    if current_user_id != target_user_id and role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to update this profile")

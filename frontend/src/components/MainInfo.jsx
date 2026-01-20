@@ -1,22 +1,28 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { updateMainInfo } from '../services/api';
 import { countries } from '../utils/countries';
 import LoadingSpinner from './LoadingSpinner';
 import { computeAge } from '../utils/dateUtils';
 
-const MainInfo = ({ profile, onUpdate, readOnly = false }) => {
+const getFormDataFromProfile = (profile) => ({
+  name: profile?.name || '',
+  phone: profile?.phone || '',
+  date_of_birth: profile?.date_of_birth || '',
+  nationality: profile?.nationality || '',
+  gender: profile?.gender || '',
+  id_number: profile?.id_number || '',
+});
+
+const MainInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null }) => {
   const [isEditing, setIsEditing] = useState(false);
   const canEdit = !readOnly;
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: profile?.name || '',
-    phone: profile?.phone || '',
-    date_of_birth: profile?.date_of_birth || '',
-    nationality: profile?.nationality || '',
-    gender: profile?.gender || '',
-    id_number: profile?.id_number || '',
-  });
+  const [formData, setFormData] = useState(getFormDataFromProfile(profile));
+
+  useEffect(() => {
+    setFormData(getFormDataFromProfile(profile));
+  }, [profile]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -24,7 +30,7 @@ const MainInfo = ({ profile, onUpdate, readOnly = false }) => {
 
   const handleSave = async () => {
     setLoading(true);
-    const userId = localStorage.getItem('user_id');
+    const userId = targetUserId || localStorage.getItem('user_id');
     const result = await updateMainInfo(userId, formData);
 
     if (result.success) {
@@ -38,14 +44,7 @@ const MainInfo = ({ profile, onUpdate, readOnly = false }) => {
   };
 
   const handleCancel = () => {
-    setFormData({
-      name: profile?.name || '',
-      phone: profile?.phone || '',
-      date_of_birth: profile?.date_of_birth || '',
-      nationality: profile?.nationality || '',
-      gender: profile?.gender || '',
-      id_number: profile?.id_number || '',
-    });
+    setFormData(getFormDataFromProfile(profile));
     setIsEditing(false);
   };
 
@@ -183,6 +182,8 @@ const MainInfo = ({ profile, onUpdate, readOnly = false }) => {
 MainInfo.propTypes = {
   profile: PropTypes.object,
   onUpdate: PropTypes.func.isRequired,
+  readOnly: PropTypes.bool,
+  targetUserId: PropTypes.string,
 };
 
 export default MainInfo;

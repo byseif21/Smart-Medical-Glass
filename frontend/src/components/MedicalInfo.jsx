@@ -1,19 +1,26 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { updateMedicalInfo } from '../services/api';
 import LoadingSpinner from './LoadingSpinner';
 
-const MedicalInfo = ({ profile, onUpdate }) => {
+const getFormDataFromMedicalProfile = (profile) => ({
+  health_history: profile?.medical_info?.health_history || '',
+  chronic_conditions: profile?.medical_info?.chronic_conditions || '',
+  allergies: profile?.medical_info?.allergies || '',
+  current_medications: profile?.medical_info?.current_medications || '',
+  previous_surgeries: profile?.medical_info?.previous_surgeries || '',
+  emergency_notes: profile?.medical_info?.emergency_notes || '',
+});
+
+const MedicalInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const canEdit = !readOnly;
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    health_history: profile?.medical_info?.health_history || '',
-    chronic_conditions: profile?.medical_info?.chronic_conditions || '',
-    allergies: profile?.medical_info?.allergies || '',
-    current_medications: profile?.medical_info?.current_medications || '',
-    previous_surgeries: profile?.medical_info?.previous_surgeries || '',
-    emergency_notes: profile?.medical_info?.emergency_notes || '',
-  });
+  const [formData, setFormData] = useState(getFormDataFromMedicalProfile(profile));
+
+  useEffect(() => {
+    setFormData(getFormDataFromMedicalProfile(profile));
+  }, [profile]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -21,7 +28,7 @@ const MedicalInfo = ({ profile, onUpdate }) => {
 
   const handleSave = async () => {
     setLoading(true);
-    const userId = localStorage.getItem('user_id');
+    const userId = targetUserId || localStorage.getItem('user_id');
     const result = await updateMedicalInfo(userId, formData);
 
     if (result.success) {
@@ -35,14 +42,7 @@ const MedicalInfo = ({ profile, onUpdate }) => {
   };
 
   const handleCancel = () => {
-    setFormData({
-      health_history: profile?.medical_info?.health_history || '',
-      chronic_conditions: profile?.medical_info?.chronic_conditions || '',
-      allergies: profile?.medical_info?.allergies || '',
-      current_medications: profile?.medical_info?.current_medications || '',
-      previous_surgeries: profile?.medical_info?.previous_surgeries || '',
-      emergency_notes: profile?.medical_info?.emergency_notes || '',
-    });
+    setFormData(getFormDataFromMedicalProfile(profile));
     setIsEditing(false);
   };
 
@@ -58,23 +58,24 @@ const MedicalInfo = ({ profile, onUpdate }) => {
     <div className="medical-card">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-semibold">Medical Information</h2>
-        {!isEditing ? (
-          <button
-            onClick={() => setIsEditing(true)}
-            className="btn-medical-secondary text-sm px-4 py-2"
-          >
-            Edit
-          </button>
-        ) : (
-          <div className="flex gap-2">
-            <button onClick={handleCancel} className="btn-medical-secondary text-sm px-4 py-2">
-              Cancel
+        {canEdit &&
+          (!isEditing ? (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="btn-medical-secondary text-sm px-4 py-2"
+            >
+              Edit
             </button>
-            <button onClick={handleSave} className="btn-medical-primary text-sm px-4 py-2">
-              Save
-            </button>
-          </div>
-        )}
+          ) : (
+            <div className="flex gap-2">
+              <button onClick={handleCancel} className="btn-medical-secondary text-sm px-4 py-2">
+                Cancel
+              </button>
+              <button onClick={handleSave} className="btn-medical-primary text-sm px-4 py-2">
+                Save
+              </button>
+            </div>
+          ))}
       </div>
 
       <div className="space-y-6">
@@ -163,6 +164,8 @@ const MedicalInfo = ({ profile, onUpdate }) => {
 MedicalInfo.propTypes = {
   profile: PropTypes.object,
   onUpdate: PropTypes.func.isRequired,
+  readOnly: PropTypes.bool,
+  targetUserId: PropTypes.string,
 };
 
 export default MedicalInfo;

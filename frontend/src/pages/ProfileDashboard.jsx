@@ -11,14 +11,19 @@ const ProfileDashboard = () => {
   const [activeTab, setActiveTab] = useState('main');
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isViewingOther, setIsViewingOther] = useState(false);
   const navigate = useNavigate();
   const { userId: urlUserId } = useParams();
+  const currentUserId = localStorage.getItem('user_id');
+  const userRole = localStorage.getItem('user_role') || 'user';
+
+  // derived state
+  const isViewingOther = urlUserId && urlUserId !== currentUserId;
+  const isAdmin = userRole === 'admin';
+  const canViewMedical = !isViewingOther || isAdmin || userRole === 'doctor';
+  const canEdit = !isViewingOther || isAdmin;
 
   const loadProfile = async (options = {}) => {
     const silent = !!options?.silent;
-    // Check if viewing another user's profile or own profile
-    const currentUserId = localStorage.getItem('user_id');
     const viewingUserId = urlUserId || currentUserId;
 
     if (!currentUserId) {
@@ -26,7 +31,6 @@ const ProfileDashboard = () => {
       return;
     }
 
-    setIsViewingOther(urlUserId && urlUserId !== currentUserId);
     if (!silent) setLoading(true);
     const result = await getProfile(viewingUserId);
 
@@ -42,19 +46,31 @@ const ProfileDashboard = () => {
     localStorage.removeItem('user_id');
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user_name');
+    localStorage.removeItem('user_role');
     navigate('/login', { replace: true });
   };
 
   useEffect(() => {
+    setActiveTab('main');
     loadProfile();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [urlUserId]);
 
   const tabs = [
     { id: 'main', label: 'Main Info', icon: 'user' },
-    { id: 'medical', label: 'Medical Info', icon: 'heart' },
-    { id: 'connections', label: 'Connections', icon: 'users' },
+    ...(canViewMedical ? [{ id: 'medical', label: 'Medical Info', icon: 'heart' }] : []),
+    {
+      id: 'connections',
+      label: isViewingOther ? 'Emergency Contacts' : 'Connections',
+      icon: 'users',
+    },
   ];
+
+  useEffect(() => {
+    if (activeTab === 'medical' && !canViewMedical) {
+      setActiveTab('main');
+    }
+  }, [activeTab, canViewMedical]);
 
   if (loading) {
     return (
@@ -92,9 +108,9 @@ const ProfileDashboard = () => {
             </div>
             <div className="flex gap-3">
               {isViewingOther && (
-                <Link to="/dashboard" className="btn-medical-secondary text-sm px-4 py-2">
+                <a href="/dashboard" className="btn-medical-secondary text-sm px-4 py-2">
                   ← My Profile
-                </Link>
+                </a>
               )}
               <Link to="/recognize" className="btn-medical-primary text-sm px-4 py-2">
                 Recognize Face
@@ -133,14 +149,75 @@ const ProfileDashboard = () => {
       {/* Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="animate-fade-in">
+          {isViewingOther && (
+            <div className="medical-card mb-6 border border-yellow-200 bg-yellow-50">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-semibold text-yellow-900">
+                    {isAdmin ? 'Admin view' : 'Read-only view'}
+                  </p>
+                  <p className="text-sm text-yellow-800">
+                    {isAdmin
+                      ? 'You are viewing another user profile. Changes apply to this user.'
+                      : 'You are viewing another user profile. Editing is disabled.'}
+                  </p>
+                </div>
+                {userRole && (
+                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-900">
+                    Role: {userRole}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
           <div hidden={activeTab !== 'main'}>
-            <MainInfo profile={profile} onUpdate={loadProfile} readOnly={isViewingOther} />
+            <MainInfo
+              profile={profile}
+              onUpdate={loadProfile}
+              readOnly={!canEdit}
+              targetUserId={urlUserId}
+            />
           </div>
-          <div hidden={activeTab !== 'medical'}>
-            <MedicalInfo profile={profile} onUpdate={loadProfile} readOnly={isViewingOther} />
-          </div>
+          {canViewMedical && (
+            <div hidden={activeTab !== 'medical'}>
+              <MedicalInfo
+                profile={profile}
+                onUpdate={loadProfile}
+                readOnly={!canEdit}
+                targetUserId={urlUserId}
+              />
+            </div>
+          )}
           <div hidden={activeTab !== 'connections'}>
-            <Connections />
+            {isViewingOther ? (
+              <div className="medical-card">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-semibold">Emergency Contacts</h2>
+                </div>
+                {profile?.emergency_contacts?.length ? (
+                  <div className="space-y-2">
+                    {profile.emergency_contacts.map((relative) => (
+                      <div
+                        key={
+                          relative.id || `${relative.name}-${relative.phone}-${relative.relation}`
+                        }
+                        className="flex items-center justify-between p-3 bg-white rounded-lg border border-medical-gray-200"
+                      >
+                        <div>
+                          <p className="font-medium text-medical-dark">{relative.name}</p>
+                          <p className="text-sm text-medical-gray-600">{relative.relation}</p>
+                        </div>
+                        <p className="text-medical-primary font-medium">{relative.phone}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-medical-gray-600">No emergency contacts found.</p>
+                )}
+              </div>
+            ) : (
+              <Connections />
+            )}
           </div>
         </div>
       </main>

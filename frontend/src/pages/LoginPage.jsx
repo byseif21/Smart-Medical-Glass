@@ -80,6 +80,7 @@ const LoginPage = () => {
       localStorage.setItem('user_id', data.user_id);
       localStorage.setItem('user_name', data.name);
       localStorage.setItem('auth_token', data.token);
+      localStorage.setItem('user_role', data.role || 'user');
 
       // Redirect to dashboard
       notify({ type: 'success', title: 'Welcome back', message: 'Signed in successfully.' });
@@ -170,6 +171,7 @@ const LoginPage = () => {
       localStorage.setItem('user_id', result.data.user_id);
       localStorage.setItem('user_name', result.data.name);
       localStorage.setItem('auth_token', result.data.token);
+      localStorage.setItem('user_role', result.data.role || 'user');
       notify({ type: 'success', title: 'Welcome back', message: 'Signed in successfully.' });
       navigate('/dashboard', { replace: true });
     } catch (err) {

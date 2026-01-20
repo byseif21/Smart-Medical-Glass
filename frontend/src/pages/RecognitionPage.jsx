@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import FaceCapture from '../components/FaceCapture';
 import FaceUploader from '../components/FaceUploader';
 import LoadingSpinner from '../components/LoadingSpinner';
+import ProfileAvatar from '../components/ProfileAvatar';
 import { recognizeFace } from '../services/api';
 import { computeAge } from '../utils/dateUtils';
 
@@ -13,6 +14,9 @@ const RecognitionPage = () => {
   const [recognizedPerson, setRecognizedPerson] = useState(null);
   const [showViewProfile, setShowViewProfile] = useState(false);
   const navigate = useNavigate();
+  const userRole = localStorage.getItem('user_role') || 'user';
+  const canViewFullProfile = userRole === 'doctor' || userRole === 'admin';
+  const canViewMedicalInfo = canViewFullProfile;
 
   const handleFaceSubmit = async (imageFile) => {
     setLoading(true);
@@ -28,12 +32,7 @@ const RecognitionPage = () => {
 
       if (result.success && result.data.match) {
         setRecognizedPerson(result.data);
-        setShowViewProfile(true);
-
-        // Auto-navigate after 3 seconds (or user can click button immediately)
-        setTimeout(() => {
-          handleViewProfile(result.data);
-        }, 3000);
+        setShowViewProfile(canViewFullProfile);
       } else {
         setError('Face not recognized. Person may not be registered in the system.');
       }
@@ -101,7 +100,7 @@ const RecognitionPage = () => {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-semibold text-green-600">✓ Person Recognized</h2>
                 <div className="flex gap-2">
-                  {showViewProfile && (
+                  {showViewProfile && canViewFullProfile && (
                     <button
                       onClick={() => handleViewProfile(recognizedPerson)}
                       className="btn-medical-primary text-sm px-4 py-2"
@@ -115,32 +114,15 @@ const RecognitionPage = () => {
                 </div>
               </div>
 
-              {showViewProfile && (
-                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
-                  <p className="text-blue-700 text-sm">
-                    Redirecting to profile in 3 seconds... or click &quot;View Full Profile&quot;
-                    now
-                  </p>
-                </div>
-              )}
-
               <div className="bg-medical-light p-6 rounded-lg">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-20 h-20 bg-medical-primary rounded-full flex items-center justify-center">
-                    <svg
-                      className="w-10 h-10 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
-                  </div>
+                  <ProfileAvatar
+                    imageUrl={recognizedPerson.profile_picture_url}
+                    userName={recognizedPerson.name}
+                    size="lg"
+                    clickable={true}
+                    className="border-2 border-medical-primary"
+                  />
                   <div>
                     <h3 className="text-2xl font-bold text-medical-dark">
                       {recognizedPerson.name}
@@ -180,7 +162,7 @@ const RecognitionPage = () => {
                 </div>
 
                 {/* Medical Info */}
-                {recognizedPerson.medical_info && (
+                {canViewMedicalInfo && recognizedPerson.medical_info && (
                   <div className="border-t border-medical-gray-200 pt-4">
                     <h4 className="font-semibold text-medical-dark mb-3">Medical Information</h4>
                     <div className="space-y-3">
@@ -221,25 +203,27 @@ const RecognitionPage = () => {
                 )}
 
                 {/* Emergency Contacts */}
-                {recognizedPerson.relatives && recognizedPerson.relatives.length > 0 && (
-                  <div className="border-t border-medical-gray-200 pt-4 mt-4">
-                    <h4 className="font-semibold text-medical-dark mb-3">Emergency Contacts</h4>
-                    <div className="space-y-2">
-                      {recognizedPerson.relatives.map((relative, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between p-3 bg-white rounded-lg border border-medical-gray-200"
-                        >
-                          <div>
-                            <p className="font-medium text-medical-dark">{relative.name}</p>
-                            <p className="text-sm text-medical-gray-600">{relative.relation}</p>
+                {canViewMedicalInfo &&
+                  recognizedPerson.emergency_contacts &&
+                  recognizedPerson.emergency_contacts.length > 0 && (
+                    <div className="border-t border-medical-gray-200 pt-4 mt-4">
+                      <h4 className="font-semibold text-medical-dark mb-3">Emergency Contacts</h4>
+                      <div className="space-y-2">
+                        {recognizedPerson.emergency_contacts.map((relative, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-3 bg-white rounded-lg border border-medical-gray-200"
+                          >
+                            <div>
+                              <p className="font-medium text-medical-dark">{relative.name}</p>
+                              <p className="text-sm text-medical-gray-600">{relative.relation}</p>
+                            </div>
+                            <p className="text-medical-primary font-medium">{relative.phone}</p>
                           </div>
-                          <p className="text-medical-primary font-medium">{relative.phone}</p>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             </div>
           </div>

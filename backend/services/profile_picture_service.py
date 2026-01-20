@@ -49,18 +49,12 @@ def get_profile_picture_url(user_id: str, supabase_client: Client) -> Optional[s
             
             # Convert storage path to full public URL
             # The image_path is stored as "user_id/front.jpg"
-            # We need to get the public URL from Supabase storage
-            try:
-                public_url = supabase_client.storage.from_('face-images').get_public_url(image_path)
-                return public_url
-            except Exception as e:
-                print(f"Warning: Failed to generate public URL for {image_path}: {str(e)}")
-                # Return the path anyway, frontend might be able to construct the URL
-                return image_path
+            # We need to get the public URL from the bucket
+            public_url = supabase_client.storage.from_('face-images').get_public_url(image_path)
+            return public_url
         
-        # No front-facing image found
         return None
         
     except Exception as e:
-        # Log the error and raise a custom exception
-        raise ProfilePictureError(f"Failed to retrieve profile picture: {str(e)}")
+        print(f"Error getting profile picture for user {user_id}: {str(e)}")
+        return None

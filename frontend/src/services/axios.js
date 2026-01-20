@@ -43,6 +43,7 @@ apiClient.interceptors.response.use(
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user_id');
       localStorage.removeItem('user_name');
+      localStorage.removeItem('user_role');
       window.location.replace('/login');
     }
     return Promise.reject(error);
