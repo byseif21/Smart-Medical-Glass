@@ -6,7 +6,7 @@ from services.storage_service import get_supabase_service
 from routers.auth import get_current_user
 from utils.config import get_config
 
-router = APIRouter(prefix="/api/admin", tags=["admin"])
+router = APIRouter(prefix="/api/users", tags=["admin"])
 settings = get_config()
 
 # --- Admin Models ---
@@ -39,7 +39,7 @@ def get_current_admin_user(current_user: dict = Depends(get_current_user)):
 
 # --- Admin Endpoints ---
 
-@router.get("/users", response_model=AdminUserListResponse)
+@router.get("/", response_model=AdminUserListResponse)
 async def list_users_admin(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -123,7 +123,7 @@ async def list_users_admin(
         print(f"Admin list users error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.delete("/users/{user_id}")
+@router.delete("/{user_id}")
 async def delete_user_admin(
     user_id: str,
     current_user: dict = Depends(get_current_admin_user)
@@ -150,7 +150,7 @@ async def delete_user_admin(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete user: {str(e)}")
 
-@router.put("/users/{user_id}")
+@router.put("/{user_id}")
 async def update_user_admin(
     user_id: str,
     update_data: UserUpdateRequest,

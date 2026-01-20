@@ -53,7 +53,7 @@ export const deleteUserAdmin = async (userId) => {
  */
 export const updateUserAdmin = async (userId, data) => {
   try {
-    const response = await apiClient.put(`/api/admin/users/${userId}`, data);
+    const response = await apiClient.put(`/api/users/${userId}`, data);
     return {
       success: true,
       data: response.data,
