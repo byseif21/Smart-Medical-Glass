@@ -34,8 +34,6 @@ async def recognize_face(image: UploadFile = File(...), current_user: dict = Dep
             if not user_resp.data:
                 raise HTTPException(status_code=404, detail="User not found")
             user = user_resp.data[0]
-            relatives_response = supabase.client.table('relatives').select('*').eq('user_id', user['id']).execute()
-            relatives = relatives_response.data if relatives_response.data else []
             role = (current_user or {}).get('role') or 'user'
             response_payload = {
                 "success": True,
@@ -47,12 +45,14 @@ async def recognize_face(image: UploadFile = File(...), current_user: dict = Dep
                 "gender": user.get('gender'),
                 "nationality": user.get('nationality'),
                 "id_number": user.get('id_number'),
-                "relatives": relatives
             }
             if role in ["doctor", "admin"]:
                 medical_response = supabase.client.table('medical_info').select('*').eq('user_id', user['id']).execute()
                 medical_info = medical_response.data[0] if medical_response.data else {}
                 response_payload["medical_info"] = medical_info
+                relatives_response = supabase.client.table('relatives').select('*').eq('user_id', user['id']).execute()
+                relatives = relatives_response.data if relatives_response.data else []
+                response_payload["relatives"] = relatives
             return response_payload
         else:
             return {
