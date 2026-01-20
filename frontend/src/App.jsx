@@ -7,7 +7,12 @@ import { ProtectedRoute, PublicRoute, RootRedirect } from './router/routeGuards'
 
 function App() {
   return (
-    <Router>
+    <Router
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <Routes>
         <Route element={<PublicRoute />}>
           <Route path="/login" element={<LoginPage />} />
