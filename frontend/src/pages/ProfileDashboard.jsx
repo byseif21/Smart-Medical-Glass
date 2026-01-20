@@ -107,9 +107,9 @@ const ProfileDashboard = () => {
             </div>
             <div className="flex gap-3">
               {isViewingOther && (
-                <Link to="/dashboard" className="btn-medical-secondary text-sm px-4 py-2">
+                <a href="/dashboard" className="btn-medical-secondary text-sm px-4 py-2">
                   ← My Profile
-                </Link>
+                </a>
               )}
               <Link to="/recognize" className="btn-medical-primary text-sm px-4 py-2">
                 Recognize Face
