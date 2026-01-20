@@ -51,8 +51,8 @@ async def recognize_face(image: UploadFile = File(...), current_user: dict = Dep
                 medical_response = supabase.client.table('medical_info').select('*').eq('user_id', user['id']).execute()
                 medical_info = medical_response.data[0] if medical_response.data else {}
                 response_payload["medical_info"] = medical_info 
-                relatives = get_emergency_contacts(supabase.client, user['id'])
-                response_payload["relatives"] = relatives
+                emergency_contacts = get_emergency_contacts(supabase.client, user['id'])
+                response_payload["emergency_contacts"] = emergency_contacts
             return response_payload
         else:
             return {

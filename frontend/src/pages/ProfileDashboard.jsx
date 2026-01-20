@@ -194,9 +194,9 @@ const ProfileDashboard = () => {
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-semibold">Emergency Contacts</h2>
                 </div>
-                {profile?.relatives?.length ? (
+                {profile?.emergency_contacts?.length ? (
                   <div className="space-y-2">
-                    {profile.relatives.map((relative) => (
+                    {profile.emergency_contacts.map((relative) => (
                       <div
                         key={
                           relative.id || `${relative.name}-${relative.phone}-${relative.relation}`

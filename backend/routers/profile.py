@@ -73,10 +73,10 @@ async def get_profile(user_id: str, current_user: dict = Depends(get_current_use
         if can_view_full:
             medical_response = supabase.client.table('medical_info').select('*').eq('user_id', user_id).execute()
             medical_info = medical_response.data[0] if medical_response.data else {}
-            relatives = get_emergency_contacts(supabase.client, user_id)
+            emergency_contacts = get_emergency_contacts(supabase.client, user_id)
 
             response_payload["medical_info"] = medical_info
-            response_payload["relatives"] = relatives
+            response_payload["emergency_contacts"] = emergency_contacts
         else:
             response_payload.pop("email", None)
 

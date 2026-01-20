@@ -211,12 +211,12 @@ const RecognitionPage = () => {
 
                 {/* Emergency Contacts */}
                 {canViewMedicalInfo &&
-                  recognizedPerson.relatives &&
-                  recognizedPerson.relatives.length > 0 && (
+                  recognizedPerson.emergency_contacts &&
+                  recognizedPerson.emergency_contacts.length > 0 && (
                     <div className="border-t border-medical-gray-200 pt-4 mt-4">
                       <h4 className="font-semibold text-medical-dark mb-3">Emergency Contacts</h4>
                       <div className="space-y-2">
-                        {recognizedPerson.relatives.map((relative, index) => (
+                        {recognizedPerson.emergency_contacts.map((relative, index) => (
                           <div
                             key={index}
                             className="flex items-center justify-between p-3 bg-white rounded-lg border border-medical-gray-200"
