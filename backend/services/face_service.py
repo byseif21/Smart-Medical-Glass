@@ -255,20 +255,19 @@ class FaceRecognitionService:
             
             # Find best match
             best_match_index = None
-            best_distance = None
+            best_distance = float('inf')
             
-            for i, (match, distance) in enumerate(zip(matches, face_distances)):
-                if match:
-                    if best_match_index is None or distance < best_distance:
-                        best_match_index = i
-                        best_distance = distance
+            # Find the absolute best match first (ignoring tolerance for now)
+            for i, distance in enumerate(face_distances):
+                if distance < best_distance:
+                    best_distance = distance
+                    best_match_index = i
             
-            # Return result
-            if best_match_index is not None:
+            # Check if the best match is within tolerance
+            if best_match_index is not None and best_distance <= self.tolerance:
                 matched_encoding = stored_encodings[best_match_index]
-                # Convert distance to confidence (0 = perfect match, 1 = no match)
-                # Confidence = 1 - (distance / tolerance)
-                confidence = max(0.0, min(1.0, 1.0 - (best_distance / self.tolerance)))
+                # Confidence = 1 - distance (Linear confidence)
+                confidence = max(0.0, min(1.0, 1.0 - best_distance))
                 
                 return FaceMatch(
                     matched=True,
@@ -277,15 +276,42 @@ class FaceRecognitionService:
                     distance=float(best_distance)
                 )
             else:
+                # Return the best candidate even if not matched, but marked as matched=False
+                # This helps debugging or "near match" logic if needed
                 return FaceMatch(
                     matched=False,
-                    user_id=None,
-                    confidence=None,
-                    distance=None
+                    user_id=stored_encodings[best_match_index].user_id if best_match_index is not None else None,
+                    confidence=max(0.0, min(1.0, 1.0 - best_distance)) if best_distance != float('inf') else 0.0,
+                    distance=float(best_distance) if best_distance != float('inf') else None
                 )
                 
         except Exception as e:
             raise FaceRecognitionError(f"Face matching failed: {str(e)}")
+
+    def compare_faces(self, encoding1: List[float], encoding2: List[float]) -> float:
+        """
+        Compare two face encodings and return the Euclidean distance.
+        Lower distance means better match.
+        
+        Args:
+            encoding1: First face encoding
+            encoding2: Second face encoding
+            
+        Returns:
+            float: Euclidean distance (0.0 to 1.0+)
+        """
+        try:
+            import face_recognition as fr
+            import numpy as np
+            
+            # Convert to numpy arrays if needed
+            e1 = np.array(encoding1) if not isinstance(encoding1, np.ndarray) else encoding1
+            e2 = np.array(encoding2) if not isinstance(encoding2, np.ndarray) else encoding2
+            
+            return float(fr.face_distance([e1], e2)[0])
+        except Exception:
+            # Fallback for errors or missing library
+            return 1.0
     
     def get_encoding_count(self) -> int:
         """

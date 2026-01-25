@@ -28,11 +28,23 @@ async def recognize_face(image: UploadFile = File(...), current_user: dict = Dep
             error_msg = result.error or "No face detected in the image"
             raise HTTPException(status_code=400, detail=error_msg)
         
-        match_result = face_service.find_match(result.encoding)
+        # Manual recognition logic for full control
+        stored_encodings = face_service.load_encodings()
+        best_match = None
+        best_distance = float('inf')
+        
+        for stored in stored_encodings:
+            distance = face_service.compare_faces(result.encoding, stored.encoding)
+            if distance < best_distance:
+                best_distance = distance
+                best_match = stored
         
         # Check if match is good enough
-        if match_result.matched and match_result.user_id is not None:
-            user_resp = supabase.client.table('users').select('*').eq('id', match_result.user_id).execute()
+        is_match = best_match is not None and best_distance < settings.FACE_RECOGNITION_TOLERANCE
+        
+        if is_match and best_match:
+            confidence = 1.0 - best_distance
+            user_resp = supabase.client.table('users').select('*').eq('id', best_match.user_id).execute()
             if not user_resp.data:
                 raise HTTPException(status_code=404, detail="User not found")
             user = user_resp.data[0]
@@ -48,7 +60,7 @@ async def recognize_face(image: UploadFile = File(...), current_user: dict = Dep
             response_payload = {
                 "success": True,
                 "match": True,
-                "confidence": match_result.confidence,
+                "confidence": confidence,
                 "user_id": user['id'],
                 "name": user['name'],
                 "profile_picture_url": profile_picture_url,
@@ -69,7 +81,7 @@ async def recognize_face(image: UploadFile = File(...), current_user: dict = Dep
                 "success": True,
                 "match": False,
                 "message": "Face not recognized",
-                "confidence": match_result.confidence or 0
+                "confidence": (1.0 - best_distance) if best_distance != float('inf') else 0.0
             }
     
     except HTTPException:
