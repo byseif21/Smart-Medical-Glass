@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getCurrentUser } from '../services/auth';
 import {
   getConnections,
   createLinkedConnection,
@@ -13,7 +14,7 @@ import ConnectionCard from './ConnectionCard';
 import AddConnectionModal from './AddConnectionModal';
 import LoadingSpinner from './LoadingSpinner';
 
-const Connections = () => {
+const Connections = ({ targetUserId }) => {
   const [loading, setLoading] = useState(false);
   const [linkedConnections, setLinkedConnections] = useState([]);
   const [externalContacts, setExternalContacts] = useState([]);
@@ -26,7 +27,7 @@ const Connections = () => {
   const [confirmTarget, setConfirmTarget] = useState(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
 
-  const userId = localStorage.getItem('user_id');
+  const userId = targetUserId || getCurrentUser()?.id;
 
   // Fetch connections on mount
   useEffect(() => {
@@ -184,8 +185,8 @@ const Connections = () => {
       }
     }
   };
-  
-// TODO: unify in GeneralModal (consistent UX)
+
+  // TODO: unify in GeneralModal (consistent UX)
   const handleRemoveConnection = (connection) => {
     setConfirmTarget(connection);
     setConfirmOpen(true);

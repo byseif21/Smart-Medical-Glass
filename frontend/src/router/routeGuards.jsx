@@ -1,14 +1,8 @@
 import { Navigate, Outlet } from 'react-router-dom';
-
-const isAuthenticated = () => {
-  const token = localStorage.getItem('auth_token');
-  const userId = localStorage.getItem('user_id');
-  return Boolean(token && userId);
-};
+import { isAuthenticated, isAdmin as checkIsAdmin } from '../services/auth';
 
 const isAdmin = () => {
-  const role = localStorage.getItem('user_role');
-  return isAuthenticated() && role === 'admin';
+  return isAuthenticated() && checkIsAdmin();
 };
 
 export const PublicRoute = () => {

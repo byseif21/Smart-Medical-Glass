@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { updateMainInfo } from '../services/api';
+import { getCurrentUser } from '../services/auth';
 import { countries } from '../utils/countries';
 import LoadingSpinner from './LoadingSpinner';
 import { computeAge } from '../utils/dateUtils';
@@ -30,7 +31,7 @@ const MainInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null }) 
 
   const handleSave = async () => {
     setLoading(true);
-    const userId = targetUserId || localStorage.getItem('user_id');
+    const userId = targetUserId || getCurrentUser()?.id;
     const result = await updateMainInfo(userId, formData);
 
     if (result.success) {

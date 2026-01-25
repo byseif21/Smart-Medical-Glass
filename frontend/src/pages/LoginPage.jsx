@@ -5,6 +5,7 @@ import FaceUploader from '../components/FaceUploader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ProfileAvatar from '../components/ProfileAvatar';
 import { useNotifications } from '../hooks/useNotifications';
+import { setSession } from '../services/auth';
 import { confirmFaceLogin, loginWithFace } from '../services/api';
 import { getTraditionalLoginErrorMessage, getSafeLoginErrorMessage } from '../utils/errorHelpers';
 
@@ -77,10 +78,7 @@ const LoginPage = () => {
       }
 
       // Store user data
-      localStorage.setItem('user_id', data.user_id);
-      localStorage.setItem('user_name', data.name);
-      localStorage.setItem('auth_token', data.token);
-      localStorage.setItem('user_role', data.role || 'user');
+      setSession(data);
 
       // Redirect to dashboard
       notify({ type: 'success', title: 'Welcome back', message: 'Signed in successfully.' });
@@ -168,10 +166,7 @@ const LoginPage = () => {
         return;
       }
 
-      localStorage.setItem('user_id', result.data.user_id);
-      localStorage.setItem('user_name', result.data.name);
-      localStorage.setItem('auth_token', result.data.token);
-      localStorage.setItem('user_role', result.data.role || 'user');
+      setSession(result.data);
       notify({ type: 'success', title: 'Welcome back', message: 'Signed in successfully.' });
       navigate('/dashboard', { replace: true });
     } catch (err) {

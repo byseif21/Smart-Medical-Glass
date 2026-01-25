@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
+import { getCurrentUser, getUserRole, clearSession } from '../services/auth';
 import MainInfo from '../components/MainInfo';
 import MedicalInfo from '../components/MedicalInfo';
 import Connections from '../components/Connections';
@@ -13,8 +14,8 @@ const ProfileDashboard = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { userId: urlUserId } = useParams();
-  const currentUserId = localStorage.getItem('user_id');
-  const userRole = localStorage.getItem('user_role') || 'user';
+  const currentUserId = getCurrentUser()?.id;
+  const userRole = getUserRole();
 
   // derived state
   const isViewingOther = urlUserId && urlUserId !== currentUserId;
@@ -43,10 +44,7 @@ const ProfileDashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('user_id');
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_name');
-    localStorage.removeItem('user_role');
+    clearSession();
     navigate('/login', { replace: true });
   };
 
@@ -108,7 +106,10 @@ const ProfileDashboard = () => {
             </div>
             <div className="flex gap-3">
               {isAdmin && (
-                <Link to="/admin" className="btn-medical-secondary text-sm px-4 py-2 bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100">
+                <Link
+                  to="/admin"
+                  className="btn-medical-secondary text-sm px-4 py-2 bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100"
+                >
                   Admin Panel
                 </Link>
               )}

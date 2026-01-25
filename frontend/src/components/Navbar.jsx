@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { getCurrentUser, clearSession, isAuthenticated } from '../services/auth';
 import { getProfile } from '../services/api';
 import ProfileAvatar from './ProfileAvatar';
 import '../styles/glassmorphism.css';
@@ -25,15 +26,12 @@ const Navbar = () => {
 
   useEffect(() => {
     const checkAuth = () => {
-      const token = localStorage.getItem('auth_token');
-      const userId = localStorage.getItem('user_id');
-      const email = localStorage.getItem('user_name') || 'User'; // Or fetch email if stored
-      const role = localStorage.getItem('user_role');
+      const user = getCurrentUser();
 
-      if (token && userId) {
-        setUser({ id: userId, email }); // Minimal user object
-        setIsAdmin(role === 'admin');
-        fetchProfileData(userId);
+      if (isAuthenticated() && user) {
+        setUser({ id: user.id, email: user.name }); // Minimal user object
+        setIsAdmin(user.role === 'admin');
+        fetchProfileData(user.id);
       } else {
         setUser(null);
         setIsAdmin(false);
@@ -42,17 +40,14 @@ const Navbar = () => {
     };
 
     checkAuth();
-    
+
     // Listen for storage changes (in case of login/logout in another tab/component)
     window.addEventListener('storage', checkAuth);
     return () => window.removeEventListener('storage', checkAuth);
   }, [location.pathname]); // Re-check on route change
 
   const handleSignOut = () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_id');
-    localStorage.removeItem('user_name');
-    localStorage.removeItem('user_role');
+    clearSession();
     setUser(null);
     setProfileData(null);
     setIsAdmin(false);
@@ -89,7 +84,7 @@ const Navbar = () => {
               >
                 Home
               </Link>
-              
+
               {isAdmin && (
                 <Link
                   to="/admin"
@@ -119,13 +114,15 @@ const Navbar = () => {
                 {user ? (
                   <>
                     <Link to="/dashboard" className="flex items-center">
-                        <ProfileAvatar
+                      <ProfileAvatar
                         imageUrl={profileData?.profile_picture_url}
                         userName={user.email}
                         size="sm"
                         className="mr-2"
-                        />
-                        <span className="text-sm text-gray-400 px-3 hover:text-white transition-colors">{user.email}</span>
+                      />
+                      <span className="text-sm text-gray-400 px-3 hover:text-white transition-colors">
+                        {user.email}
+                      </span>
                     </Link>
                     <button onClick={handleSignOut} className="glass-button text-sm">
                       Sign Out
@@ -133,11 +130,14 @@ const Navbar = () => {
                   </>
                 ) : (
                   <>
-                    <Link to="/register" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
-                        Register
+                    <Link
+                      to="/register"
+                      className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                    >
+                      Register
                     </Link>
                     <button onClick={handleSignIn} className="neon-button text-sm">
-                        Sign In
+                      Sign In
                     </button>
                   </>
                 )}
@@ -189,19 +189,19 @@ const Navbar = () => {
             >
               Home
             </Link>
-            
+
             {isAdmin && (
-                <Link
+              <Link
                 to="/admin"
                 onClick={() => setIsMenuOpen(false)}
                 className={`block px-3 py-2 rounded-lg transition-all duration-300 ${
-                    isActive('/admin')
+                  isActive('/admin')
                     ? 'glow-border-pink text-white'
                     : 'text-gray-300 hover:text-white hover:bg-white/5'
                 }`}
-                >
+              >
                 Admin
-                </Link>
+              </Link>
             )}
 
             <Link
@@ -220,8 +220,8 @@ const Navbar = () => {
             <div className="pt-4 border-t border-white/10 mt-4">
               {user ? (
                 <>
-                  <Link 
-                    to="/dashboard" 
+                  <Link
+                    to="/dashboard"
                     onClick={() => setIsMenuOpen(false)}
                     className="px-3 py-2 flex items-center space-x-3 hover:bg-white/5 rounded-lg"
                   >
@@ -244,22 +244,22 @@ const Navbar = () => {
                 </>
               ) : (
                 <>
-                    <Link
+                  <Link
                     to="/register"
                     onClick={() => setIsMenuOpen(false)}
                     className="block px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/5"
-                    >
+                  >
                     Register
-                    </Link>
-                    <button
+                  </Link>
+                  <button
                     onClick={() => {
-                        handleSignIn();
-                        setIsMenuOpen(false);
+                      handleSignIn();
+                      setIsMenuOpen(false);
                     }}
                     className="w-full neon-button mt-2"
-                    >
+                  >
                     Sign In
-                    </button>
+                  </button>
                 </>
               )}
             </div>

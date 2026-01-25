@@ -4,6 +4,7 @@ import FaceCapture from '../components/FaceCapture';
 import FaceUploader from '../components/FaceUploader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ProfileAvatar from '../components/ProfileAvatar';
+import { getUserRole, setViewingUser, getCurrentUser } from '../services/auth';
 import { recognizeFace } from '../services/api';
 import { computeAge } from '../utils/dateUtils';
 
@@ -14,7 +15,7 @@ const RecognitionPage = () => {
   const [recognizedPerson, setRecognizedPerson] = useState(null);
   const [showViewProfile, setShowViewProfile] = useState(false);
   const navigate = useNavigate();
-  const userRole = localStorage.getItem('user_role') || 'user';
+  const userRole = getUserRole();
   const isAdmin = (userRole || '').toLowerCase() === 'admin';
   const canViewFullProfile = userRole === 'doctor' || isAdmin;
   const canViewMedicalInfo = canViewFullProfile;
@@ -47,9 +48,8 @@ const RecognitionPage = () => {
 
   const handleViewProfile = (person) => {
     // Store recognized person's ID and navigate to their dashboard
-    const currentUserId = localStorage.getItem('user_id');
-    localStorage.setItem('viewing_user_id', person.user_id || currentUserId);
-    localStorage.setItem('viewing_user_name', person.name);
+    const currentUserId = getCurrentUser()?.id;
+    setViewingUser(person.user_id || currentUserId, person.name);
     navigate(`/profile/${person.user_id || currentUserId}`);
   };
 
@@ -88,7 +88,10 @@ const RecognitionPage = () => {
             </div>
             <div className="flex gap-2">
               {isAdmin && (
-                <Link to="/admin" className="btn-medical-secondary text-sm px-4 py-2 bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100">
+                <Link
+                  to="/admin"
+                  className="btn-medical-secondary text-sm px-4 py-2 bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100"
+                >
                   Admin Panel
                 </Link>
               )}
