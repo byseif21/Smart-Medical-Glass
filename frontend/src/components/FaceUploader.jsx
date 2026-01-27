@@ -1,13 +1,14 @@
 import { useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 
-const FaceUploader = ({ onUpload }) => {
+const FaceUploader = ({ onUpload, isLoading = false }) => {
   const [preview, setPreview] = useState(null);
   const [file, setFile] = useState(null);
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
 
   const handleFileSelect = (e) => {
+    if (isLoading) return;
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
@@ -82,11 +83,19 @@ const FaceUploader = ({ onUpload }) => {
           </div>
 
           <div className="flex gap-3">
-            <button onClick={handleClear} className="flex-1 btn-medical-secondary">
+            <button
+              onClick={handleClear}
+              className="flex-1 btn-medical-secondary"
+              disabled={isLoading}
+            >
               Change Photo
             </button>
-            <button onClick={handleUpload} className="flex-1 btn-medical-primary">
-              Authenticate
+            <button
+              onClick={handleUpload}
+              className="flex-1 btn-medical-primary"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Saving...' : 'Authenticate'}
             </button>
           </div>
         </div>

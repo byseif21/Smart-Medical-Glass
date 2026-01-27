@@ -143,7 +143,9 @@ async def delete_user_admin(
         if not check.data:
             raise HTTPException(status_code=404, detail="User not found")
             
-        supabase.client.table('users').delete().eq('id', user_id).execute()
+        # full cleanup
+        from services.user_service import delete_user_fully
+        delete_user_fully(user_id)
         
         return {"message": "User deleted successfully"}
         

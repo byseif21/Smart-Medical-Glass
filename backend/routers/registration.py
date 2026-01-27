@@ -1,17 +1,11 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
-from typing import Optional, List
-import bcrypt
+from typing import Optional
 import json
-from services.face_service import get_face_service
+from services.face_service import get_face_service, FaceRecognitionError, upload_face_images, collect_face_images
 from services.storage_service import get_supabase_service
+from services.security import hash_password
 
 router = APIRouter(prefix="/api", tags=["registration"])
-
-def hash_password(password: str) -> str:
-    """Hash password using bcrypt"""
-    salt = bcrypt.gensalt()
-    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
-    return hashed.decode('utf-8')
 
 @router.post("/register")
 async def register_user(
@@ -51,38 +45,21 @@ async def register_user(
         # Hash password
         password_hash = hash_password(password)
         
-        # Collect all face images
-        face_images = {}
-        if image:
-            face_images['front'] = await image.read()
-        if image_front:
-            face_images['front'] = await image_front.read()
-        if image_left:
-            face_images['left'] = await image_left.read()
-        if image_right:
-            face_images['right'] = await image_right.read()
-        if image_up:
-            face_images['up'] = await image_up.read()
-        if image_down:
-            face_images['down'] = await image_down.read()
+        # Collect face images
+        face_images = await collect_face_images(
+            image, image_front, image_left, image_right, image_up, image_down
+        )
         
         if not face_images:
             raise HTTPException(status_code=400, detail="At least one face image is required")
         
-        # Extract face encodings from all images
-        encodings = []
-        for angle, image_data in face_images.items():
-            result = face_service.extract_encoding(image_data)
-            if result.success and result.encoding is not None:
-                encodings.append(result.encoding)
+        # Process face images to get average encoding
+        try:
+            avg_encoding = face_service.process_face_images(face_images)
+        except FaceRecognitionError as e:
+            raise HTTPException(status_code=400, detail=str(e))
         
-        if not encodings:
-            raise HTTPException(status_code=400, detail="No face detected in any of the images")
-        
-        # Average the encodings for better accuracy
-        import numpy as np
-        avg_encoding = np.mean(encodings, axis=0)
-        face_encoding_json = json.dumps(avg_encoding.tolist())
+        face_encoding_json = json.dumps(avg_encoding)
         
         # TODO: after computing avg_encoding, verify it is unique before creating the user record
         # if face_service.find_match indicates a match, abort insert and inform client with a clear message
@@ -111,30 +88,14 @@ async def register_user(
         try:
             face_service.save_encoding(
                 user_id=user_id,
-                encoding=avg_encoding.tolist(),
+                encoding=avg_encoding,
                 user_data={"name": name, "email": email}
             )
         except Exception as e:
             print(f"Warning: Failed to save encoding to local storage: {str(e)}")
         
         # Upload face images to storage
-        for angle, image_data in face_images.items():
-            try:
-                file_path = f"{user_id}/{angle}.jpg"
-                supabase.client.storage.from_('face-images').upload(
-                    file_path,
-                    image_data,
-                    {"content-type": "image/jpeg"}
-                )
-                
-                # Save image record
-                supabase.client.table('face_images').insert({
-                    "user_id": user_id,
-                    "image_url": file_path,
-                    "image_type": angle
-                }).execute()
-            except Exception as e:
-                print(f"Warning: Failed to upload {angle} image: {str(e)}")
+        upload_face_images(supabase, user_id, face_images)
         
         return {
             "success": True,

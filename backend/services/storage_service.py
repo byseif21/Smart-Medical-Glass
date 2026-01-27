@@ -236,6 +236,36 @@ class SupabaseService:
         except Exception as e:
             raise SupabaseError(f"Failed to retrieve encodings: {str(e)}")
     
+    def get_face_image_metadata(self, user_id: str, image_type: str) -> Optional[Dict[str, Any]]:
+        """
+        Get metadata for a specific face image type.
+        
+        Args:
+            user_id: User identifier
+            image_type: Type of image (e.g., 'avatar', 'front')
+            
+        Returns:
+            Dictionary with image metadata or None if not found
+        """
+        try:
+            response = self.client.table('face_images') \
+                .select('image_url, created_at') \
+                .eq('user_id', user_id) \
+                .eq('image_type', image_type) \
+                .order('created_at', desc=True) \
+                .limit(1) \
+                .execute()
+            
+            if response.data and len(response.data) > 0:
+                return response.data[0]
+            return None
+        except Exception as e:
+            return None
+
+    def get_storage_public_url(self, path: str) -> str:
+        """Get public URL for a file in the face-images bucket."""
+        return self.client.storage.from_(self.storage_bucket).get_public_url(path)
+
     def upload_image(
         self,
         image_bytes: bytes,

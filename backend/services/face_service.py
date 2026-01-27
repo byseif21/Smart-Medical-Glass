@@ -6,9 +6,10 @@ Handles face encoding extraction, storage, and matching.
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import json
-import os
 from pathlib import Path
 import threading
+from fastapi import UploadFile
+import logging
 
 from models.face_encoding import (
     FaceExtractionResult,
@@ -17,6 +18,8 @@ from models.face_encoding import (
     FaceEncodingStorage
 )
 from utils.config import config
+
+logger = logging.getLogger(__name__)
 
 
 class FaceRecognitionError(Exception):
@@ -326,6 +329,47 @@ class FaceRecognitionService:
         except Exception:
             return 0
     
+    def process_face_images(self, images: Dict[str, bytes]) -> List[float]:
+        """
+        Process multiple face images, extract encodings, and calculate average.
+        
+        Args:
+            images: Dictionary of angle -> image bytes
+            
+        Returns:
+            List[float]: Average face encoding
+            
+        Raises:
+            FaceRecognitionError: If processing fails or no faces detected
+        """
+        try:
+            if not images:
+                raise FaceRecognitionError("No images provided")
+
+            encodings = []
+            errors = []
+            for angle, image_data in images.items():
+                result = self.extract_encoding(image_data)
+                if result.success and result.encoding is not None:
+                    encodings.append(result.encoding)
+                elif result.error:
+                    errors.append(f"{angle}: {result.error}")
+            
+            if not encodings:
+                error_msg = "; ".join(errors) if errors else "No face detected in any of the images"
+                raise FaceRecognitionError(f"Face processing failed: {error_msg}")
+            
+            # Average the encodings
+            import numpy as np
+            avg_encoding = np.mean(encodings, axis=0)
+            return avg_encoding.tolist()
+            
+        except FaceRecognitionError:
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error in process_face_images: {e}", exc_info=True)
+            raise FaceRecognitionError(f"Failed to process face images: {str(e)}")
+
     def delete_encoding(self, user_id: str) -> bool:
         """
         Delete encoding for a specific user.
@@ -362,6 +406,75 @@ class FaceRecognitionService:
         except Exception as e:
             raise FaceRecognitionError(f"Failed to delete encoding: {str(e)}")
 
+
+def upload_face_images(supabase, user_id: str, images: Dict[str, bytes]) -> None:
+    """
+    Upload face images to Supabase storage and update database records.
+    
+    Args:
+        supabase: Supabase service/client
+        user_id: User identifier
+        images: Dictionary of angle -> image bytes
+    """
+    for angle, image_data in images.items():
+        try:
+            file_path = f"{user_id}/{angle}.jpg"
+            # Upload to storage (upsert=True to overwrite)
+            supabase.client.storage.from_('face-images').upload(
+                file_path,
+                image_data,
+                {"content-type": "image/jpeg", "upsert": "true"}
+            )
+            
+            # Upsert image record
+            # Delete existing first to ensure clean state
+            supabase.client.table('face_images').delete().eq('user_id', user_id).eq('image_type', angle).execute()
+            supabase.client.table('face_images').insert({
+                "user_id": user_id,
+                "image_url": file_path,
+                "image_type": angle
+            }).execute()
+        except Exception as e:
+            logger.warning(f"Failed to upload {angle} image: {str(e)}")
+
+
+async def collect_face_images(
+    image: Optional[UploadFile] = None,
+    image_front: Optional[UploadFile] = None,
+    image_left: Optional[UploadFile] = None,
+    image_right: Optional[UploadFile] = None,
+    image_up: Optional[UploadFile] = None,
+    image_down: Optional[UploadFile] = None,
+) -> Dict[str, bytes]:
+    """
+    Collect and read bytes from uploaded face images.
+    
+    Args:
+        image: Legacy single image (treated as 'front')
+        image_front: Front face image
+        image_left: Left face image
+        image_right: Right face image
+        image_up: Up face image
+        image_down: Down face image
+        
+    Returns:
+        Dictionary mapping angle to image bytes
+    """
+    face_images = {}
+    if image:
+        face_images['front'] = await image.read()
+    if image_front:
+        face_images['front'] = await image_front.read()
+    if image_left:
+        face_images['left'] = await image_left.read()
+    if image_right:
+        face_images['right'] = await image_right.read()
+    if image_up:
+        face_images['up'] = await image_up.read()
+    if image_down:
+        face_images['down'] = await image_down.read()
+    
+    return face_images
 
 # Singleton instance
 _face_service_instance: Optional[FaceRecognitionService] = None

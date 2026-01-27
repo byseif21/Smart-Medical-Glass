@@ -52,24 +52,32 @@ async def recognize_face(image: UploadFile = File(...), current_user: dict = Dep
             # Fetch profile picture URL
             profile_picture_url = None
             try:
-                profile_picture_url = get_profile_picture_url(user['id'], supabase.client)
+                profile_picture_url = get_profile_picture_url(user['id'], supabase)
             except Exception:
                 profile_picture_url = None
                 
             role = (current_user or {}).get('role') or 'user'
+            is_privileged = role in ["doctor", "admin"]
+
+            # Privacy checks
+            from utils.privacy import apply_privacy_settings
+            
+            # Apply privacy settings
+            privacy_data = apply_privacy_settings(user, role)
+            
             response_payload = {
                 "success": True,
                 "match": True,
                 "confidence": confidence,
                 "user_id": user['id'],
-                "name": user['name'],
-                "profile_picture_url": profile_picture_url,
-                "date_of_birth": user.get('date_of_birth'),
-                "gender": user.get('gender'),
-                "nationality": user.get('nationality'),
-                "id_number": user.get('id_number'),
+                "name": privacy_data['name'],
+                "profile_picture_url": profile_picture_url if privacy_data['name'] != "Private Account" else None,
+                "date_of_birth": privacy_data['date_of_birth'],
+                "gender": privacy_data['gender'],
+                "nationality": privacy_data['nationality'],
+                "id_number": privacy_data['id_number'],
             }
-            if role in ["doctor", "admin"]:
+            if is_privileged:
                 medical_response = supabase.client.table('medical_info').select('*').eq('user_id', user['id']).execute()
                 medical_info = medical_response.data[0] if medical_response.data else {}
                 response_payload["medical_info"] = medical_info 

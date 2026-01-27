@@ -1,12 +1,28 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
+import bcrypt
+import json
 from services.storage_service import get_supabase_service
-from services.profile_picture_service import get_profile_picture_url, ProfilePictureError
+from services.profile_picture_service import get_profile_picture_url, save_profile_picture, ProfilePictureError
 from services.contact_service import get_emergency_contacts
+from services.face_service import get_face_service, FaceRecognitionError, upload_face_images, collect_face_images
+from services.security import verify_password
 from routers.auth import get_current_user, verify_user_access
 
 router = APIRouter(prefix="/api/profile", tags=["profile"])
+
+class DeleteAccountRequest(BaseModel):
+    password: str
+
+class PrivacySettingsUpdate(BaseModel):
+    is_name_public: Optional[bool] = None
+    is_id_number_public: Optional[bool] = None
+    is_phone_public: Optional[bool] = None
+    is_email_public: Optional[bool] = None
+    is_dob_public: Optional[bool] = None
+    is_gender_public: Optional[bool] = None
+    is_nationality_public: Optional[bool] = None
 
 class MainInfoUpdate(BaseModel):
     name: Optional[str] = None
@@ -46,7 +62,7 @@ async def get_profile(user_id: str, current_user: dict = Depends(get_current_use
         role = (current_user or {}).get("role") or "user"
 
         # Get user basic info
-        user_response = supabase.client.table('users').select('id, name, email, phone, date_of_birth, gender, nationality, id_number').eq('id', user_id).execute()
+        user_response = supabase.client.table('users').select('id, name, email, phone, date_of_birth, gender, nationality, id_number, face_updated_at, is_name_public, is_id_number_public, is_phone_public, is_email_public, is_dob_public, is_gender_public, is_nationality_public').eq('id', user_id).execute()
         
         if not user_response.data:
             raise HTTPException(status_code=404, detail="User not found")
@@ -57,20 +73,23 @@ async def get_profile(user_id: str, current_user: dict = Depends(get_current_use
         # If retrieval fails, set to None to maintain backward compatibility
         profile_picture_url = None
         try:
-            profile_picture_url = get_profile_picture_url(user_id, supabase.client)
+            profile_picture_url = get_profile_picture_url(user_id, supabase)
         except ProfilePictureError as e:
             # Log error but don't fail the entire request
             print(f"Warning: Failed to retrieve profile picture for user {user_id}: {str(e)}")
         
+        # Inject profile picture url into user dict for privacy helper
+        user['profile_picture_url'] = profile_picture_url
+        
         is_self = current_user_id == user_id
         can_view_full = is_self or role in ["doctor", "admin"]
 
-        response_payload = {
-            **user,
-            "profile_picture_url": profile_picture_url
-        }
-
         if can_view_full:
+            # If authorized, return everything
+            response_payload = {
+                **user,
+                "profile_picture_url": profile_picture_url
+            }
             medical_response = supabase.client.table('medical_info').select('*').eq('user_id', user_id).execute()
             medical_info = medical_response.data[0] if medical_response.data else {}
             emergency_contacts = get_emergency_contacts(supabase.client, user_id)
@@ -78,7 +97,9 @@ async def get_profile(user_id: str, current_user: dict = Depends(get_current_use
             response_payload["medical_info"] = medical_info
             response_payload["emergency_contacts"] = emergency_contacts
         else:
-            response_payload.pop("email", None)
+            # Apply privacy settings for other users
+            from utils.privacy import apply_privacy_settings
+            response_payload = apply_privacy_settings(user, role)
 
         return response_payload
     
@@ -86,6 +107,38 @@ async def get_profile(user_id: str, current_user: dict = Depends(get_current_use
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch profile: {str(e)}")
+
+@router.put("/privacy/{user_id}")
+async def update_privacy_settings(user_id: str, data: PrivacySettingsUpdate, current_user: dict = Depends(get_current_user)):
+    """
+    Update user's privacy settings
+    """
+    supabase = get_supabase_service()
+    
+    try:
+        verify_user_access(current_user, user_id)
+
+        # Prepare update data (only include non-None values)
+        update_data = {k: v for k, v in data.dict().items() if v is not None}
+        
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No data provided for update")
+        
+        # Update user
+        response = supabase.client.table('users').update(update_data).eq('id', user_id).execute()
+        
+        if not response.data:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        return {
+            "message": "Privacy settings updated successfully",
+            "data": response.data[0]
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update privacy settings: {str(e)}")
 
 @router.put("/main-info/{user_id}")
 async def update_main_info(user_id: str, data: MainInfoUpdate, current_user: dict = Depends(get_current_user)):
@@ -197,3 +250,153 @@ async def update_relatives(user_id: str, data: RelativesUpdate, current_user: di
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update relatives: {str(e)}")
+
+@router.post("/face/{user_id}")
+async def update_face_enrollment(
+    user_id: str,
+    password: str = Form(...),
+    image: Optional[UploadFile] = File(None),
+    image_front: Optional[UploadFile] = File(None),
+    image_left: Optional[UploadFile] = File(None),
+    image_right: Optional[UploadFile] = File(None),
+    image_up: Optional[UploadFile] = File(None),
+    image_down: Optional[UploadFile] = File(None),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Update user's face enrollment data.
+    Requires password verification.
+    """
+    supabase = get_supabase_service()
+    face_service = get_face_service()
+
+    try:
+        # Verify access rights
+        verify_user_access(current_user, user_id)
+
+        # Get current user data including password hash
+        user_response = supabase.client.table('users').select('password_hash, email, name').eq('id', user_id).execute()
+        if not user_response.data:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        user = user_response.data[0]
+        stored_hash = user.get('password_hash')
+
+        # Verify password
+        if not stored_hash or not verify_password(password, stored_hash):
+             raise HTTPException(status_code=403, detail="Invalid password")
+
+        # Collect face images
+        face_images = await collect_face_images(
+            image, image_front, image_left, image_right, image_up, image_down
+        )
+        
+        if not face_images:
+            raise HTTPException(status_code=400, detail="At least one face image is required")
+
+        # Process face images to get average encoding
+        try:
+            avg_encoding = face_service.process_face_images(face_images)
+        except FaceRecognitionError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        
+        face_encoding_json = json.dumps(avg_encoding)
+
+        # Update user record
+        response = supabase.client.table('users').update({
+            "face_encoding": face_encoding_json
+        }).eq('id', user_id).execute()
+
+        # Update local face service
+        try:
+            face_service.save_encoding(
+                user_id=user_id,
+                encoding=avg_encoding,
+                user_data={"name": user['name'], "email": user['email']}
+            )
+        except Exception as e:
+            print(f"Warning: Failed to update local encoding: {str(e)}")
+
+        # Update storage images (overwrite/add new ones)
+        upload_face_images(supabase, user_id, face_images)
+
+        return {"message": "Face enrollment updated successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update face enrollment: {str(e)}")
+
+@router.post("/avatar/{user_id}")
+async def update_profile_picture(
+    user_id: str,
+    image: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Update user's profile picture (avatar).
+    Does not require password.
+    Does not update biometric face encoding (purely cosmetic).
+    """
+    supabase = get_supabase_service()
+
+    try:
+        # Verify access rights
+        verify_user_access(current_user, user_id)
+
+        # Read image
+        image_bytes = await image.read()
+        
+        if not image_bytes:
+            raise HTTPException(status_code=400, detail="Empty image file")
+
+        # Save profile picture using dedicated service
+        # This handles storage upload and DB record update for 'avatar' type
+        public_url = save_profile_picture(user_id, image_bytes, supabase)
+
+        return {
+            "message": "Profile picture updated successfully",
+            "data": {
+                "profile_picture_url": public_url
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update profile picture: {str(e)}")
+
+@router.post("/delete")
+async def delete_account(
+    payload: DeleteAccountRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    Delete user account and all associated data
+    """
+    supabase = get_supabase_service()
+    user_id = current_user.get("sub")
+    
+    try:
+        # Get current user to verify password
+        response = supabase.client.table('users').select('password_hash').eq('id', user_id).execute()
+        
+        if not response.data or len(response.data) == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        user = response.data[0]
+        
+        # Verify password
+        if not verify_password(payload.password, user['password_hash']):
+            raise HTTPException(status_code=400, detail="Invalid password")
+            
+        # Perform full cleanup
+        from services.user_service import delete_user_fully
+        delete_user_fully(user_id)
+            
+        return {"message": "Account deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Account deletion failed: {str(e)}")

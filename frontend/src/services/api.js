@@ -28,6 +28,52 @@ export const loginWithFace = async (formData) => {
   }
 };
 
+/**
+ * Change user password
+ * @param {string} currentPassword - Current password
+ * @param {string} newPassword - New password
+ * @returns {Promise} API response
+ */
+export const changePassword = async (currentPassword, newPassword) => {
+  try {
+    const response = await apiClient.post('/api/auth/change-password', {
+      current_password: currentPassword,
+      new_password: newPassword,
+    });
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.detail || error.message || 'Failed to change password',
+    };
+  }
+};
+
+/**
+ * Delete user account
+ * @param {string} password - User password for confirmation
+ * @returns {Promise} API response
+ */
+export const deleteAccount = async (password) => {
+  try {
+    const response = await apiClient.post('/api/profile/delete', {
+      password: password,
+    });
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.detail || error.message || 'Failed to delete account',
+    };
+  }
+};
+
 export const confirmFaceLogin = async ({ userId, password }) => {
   try {
     const response = await apiClient.post(
@@ -75,7 +121,11 @@ export const registerUser = async (formData) => {
   } catch (error) {
     return {
       success: false,
-      error: error.response?.data?.error || error.message || 'Registration failed',
+      error:
+        error.response?.data?.detail ||
+        error.response?.data?.error ||
+        error.message ||
+        'Registration failed',
     };
   }
 };
@@ -122,6 +172,27 @@ export const updateMainInfo = async (userId, data) => {
 };
 
 /**
+ * Update user privacy settings
+ * @param {string} userId - User ID
+ * @param {Object} settings - Privacy settings object
+ * @returns {Promise} API response
+ */
+export const updatePrivacySettings = async (userId, settings) => {
+  try {
+    const response = await apiClient.put(`/api/profile/privacy/${userId}`, settings);
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.detail || error.message || 'Failed to update privacy settings',
+    };
+  }
+};
+
+/**
  * Update medical info
  * @param {string} userId - User ID
  * @param {Object} data - Medical info data
@@ -159,6 +230,64 @@ export const updateRelatives = async (userId, relatives) => {
     return {
       success: false,
       error: error.response?.data?.error || error.message || 'Failed to update relatives',
+    };
+  }
+};
+
+/**
+ * Update face enrollment for a user
+ * @param {string} userId - User ID
+ * @param {FormData} formData - Form data containing password and face images
+ * @returns {Promise} API response
+ */
+export const updateFaceEnrollment = async (userId, formData) => {
+  try {
+    const response = await apiClient.post(`/api/profile/face/${userId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        error.message ||
+        'Failed to update face enrollment',
+    };
+  }
+};
+
+/**
+ * Update profile picture for a user
+ * @param {string} userId - User ID
+ * @param {FormData} formData - Form data containing image
+ * @returns {Promise} API response
+ */
+export const updateProfilePicture = async (userId, formData) => {
+  try {
+    const response = await apiClient.post(`/api/profile/avatar/${userId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        error.message ||
+        'Failed to update profile picture',
     };
   }
 };
