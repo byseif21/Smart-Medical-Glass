@@ -4,6 +4,7 @@ import RegisterPage from './pages/RegisterPage';
 import ProfileDashboard from './pages/ProfileDashboard';
 import RecognitionPage from './pages/RecognitionPage';
 import AdminDashboard from './pages/AdminDashboard';
+import SettingsPage from './pages/SettingsPage';
 import { ProtectedRoute, PublicRoute, RootRedirect, AdminRoute } from './router/routeGuards';
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
           <Route path="/dashboard" element={<ProfileDashboard />} />
           <Route path="/profile/:userId" element={<ProfileDashboard />} />
           <Route path="/recognize" element={<RecognitionPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Route>
 
         <Route path="/" element={<RootRedirect />} />

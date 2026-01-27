@@ -164,6 +164,64 @@ export const updateRelatives = async (userId, relatives) => {
 };
 
 /**
+ * Update face enrollment for a user
+ * @param {string} userId - User ID
+ * @param {FormData} formData - Form data containing password and face images
+ * @returns {Promise} API response
+ */
+export const updateFaceEnrollment = async (userId, formData) => {
+  try {
+    const response = await apiClient.post(`/api/profile/face/${userId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        error.message ||
+        'Failed to update face enrollment',
+    };
+  }
+};
+
+/**
+ * Update profile picture for a user
+ * @param {string} userId - User ID
+ * @param {FormData} formData - Form data containing image
+ * @returns {Promise} API response
+ */
+export const updateProfilePicture = async (userId, formData) => {
+  try {
+    const response = await apiClient.post(`/api/profile/avatar/${userId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        error.message ||
+        'Failed to update profile picture',
+    };
+  }
+};
+
+/**
  * Recognize a person from face image
  * @param {FormData} formData - Form data containing image
  * @returns {Promise} API response

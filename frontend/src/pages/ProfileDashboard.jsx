@@ -122,6 +122,11 @@ const ProfileDashboard = () => {
                 Recognize Face
               </Link>
               {!isViewingOther && (
+                <Link to="/settings" className="btn-medical-secondary text-sm px-4 py-2">
+                  Settings
+                </Link>
+              )}
+              {!isViewingOther && (
                 <button onClick={handleLogout} className="btn-medical-secondary text-sm px-4 py-2">
                   Logout
                 </button>
