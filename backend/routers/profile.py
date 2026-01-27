@@ -352,10 +352,7 @@ async def update_profile_picture(
 
         # Save profile picture using dedicated service
         # This handles storage upload and DB record update for 'avatar' type
-        # NOTE: get_supabase_service() returns a SupabaseService wrapper object, 
-        # but save_profile_picture expects the raw supabase client.
-        # We access the raw client via the .client attribute.
-        public_url = save_profile_picture(user_id, image_bytes, supabase.client)
+        public_url = save_profile_picture(user_id, image_bytes, supabase)
 
         return {
             "message": "Profile picture updated successfully",

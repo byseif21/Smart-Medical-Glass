@@ -77,14 +77,14 @@ def get_profile_picture_url(user_id: str, supabase_service: 'SupabaseService') -
         return None
 
 
-def save_profile_picture(user_id: str, image_bytes: bytes, supabase_client: Client) -> str:
+def save_profile_picture(user_id: str, image_bytes: bytes, supabase_service: 'SupabaseService') -> str:
     """
     Upload and save user profile picture (avatar).
     
     Args:
         user_id: The user's unique identifier
         image_bytes: The raw image data
-        supabase_client: Supabase client instance
+        supabase_service: SupabaseService instance
         
     Returns:
         The public URL of the uploaded profile picture
@@ -97,33 +97,32 @@ def save_profile_picture(user_id: str, image_bytes: bytes, supabase_client: Clie
         
         # Always try to remove the file first.
         # This avoids "Duplicate" errors and doesn't rely on flaky 'upsert' behavior
-        # cuz Db have some issues with update.
         try:
-            supabase_client.storage.from_('face-images').remove([file_path])
+            supabase_service.client.storage.from_('face-images').remove([file_path])
         except Exception:
             # Ignore errors
             pass
 
         # upload the new file
-        supabase_client.storage.from_('face-images').upload(
+        supabase_service.client.storage.from_('face-images').upload(
             file_path,
             image_bytes,
             {"content-type": "image/jpeg"}
         )
         
         # Update database record (delete old, insert new)
-        supabase_client.table('face_images').delete() \
+        supabase_service.client.table('face_images').delete() \
             .eq('user_id', user_id) \
             .eq('image_type', 'avatar') \
             .execute()
             
-        supabase_client.table('face_images').insert({
+        supabase_service.client.table('face_images').insert({
             "user_id": user_id,
             "image_url": file_path,
             "image_type": "avatar"
         }).execute()
         
-        return supabase_client.storage.from_('face-images').get_public_url(file_path)
+        return supabase_service.get_storage_public_url(file_path)
         
     except Exception as e:
         raise ProfilePictureError(f"Failed to save profile picture: {str(e)}")
