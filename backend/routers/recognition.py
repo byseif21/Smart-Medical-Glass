@@ -57,19 +57,33 @@ async def recognize_face(image: UploadFile = File(...), current_user: dict = Dep
                 profile_picture_url = None
                 
             role = (current_user or {}).get('role') or 'user'
+            is_privileged = role in ["doctor", "admin"]
+
+            # Privacy checks
+            # Default to True for name/gender if not set (legacy users), False for ID/Phone/DOB/Nationality
+            show_name = is_privileged or user.get('is_name_public', True)
+            
+            # If name is hidden and user is not privileged, hide everything else (Master Privacy Switch)
+            is_account_private = not show_name
+            
+            show_id = is_privileged or (user.get('is_id_number_public', False) and not is_account_private)
+            show_dob = is_privileged or (user.get('is_dob_public', False) and not is_account_private)
+            show_gender = is_privileged or (user.get('is_gender_public', True) and not is_account_private)
+            show_nationality = is_privileged or (user.get('is_nationality_public', False) and not is_account_private)
+            
             response_payload = {
                 "success": True,
                 "match": True,
                 "confidence": confidence,
                 "user_id": user['id'],
-                "name": user['name'],
-                "profile_picture_url": profile_picture_url,
-                "date_of_birth": user.get('date_of_birth'),
-                "gender": user.get('gender'),
-                "nationality": user.get('nationality'),
-                "id_number": user.get('id_number'),
+                "name": user['name'] if show_name else "Private Account",
+                "profile_picture_url": profile_picture_url if show_name else None,
+                "date_of_birth": user.get('date_of_birth') if show_dob else None,
+                "gender": user.get('gender') if show_gender else None,
+                "nationality": user.get('nationality') if show_nationality else None,
+                "id_number": user.get('id_number') if show_id else None,
             }
-            if role in ["doctor", "admin"]:
+            if is_privileged:
                 medical_response = supabase.client.table('medical_info').select('*').eq('user_id', user['id']).execute()
                 medical_info = medical_response.data[0] if medical_response.data else {}
                 response_payload["medical_info"] = medical_info 

@@ -122,6 +122,27 @@ export const updateMainInfo = async (userId, data) => {
 };
 
 /**
+ * Update user privacy settings
+ * @param {string} userId - User ID
+ * @param {Object} settings - Privacy settings object
+ * @returns {Promise} API response
+ */
+export const updatePrivacySettings = async (userId, settings) => {
+  try {
+    const response = await apiClient.put(`/api/profile/privacy/${userId}`, settings);
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.detail || error.message || 'Failed to update privacy settings',
+    };
+  }
+};
+
+/**
  * Update medical info
  * @param {string} userId - User ID
  * @param {Object} data - Medical info data

@@ -6,10 +6,16 @@ import ProfileAvatar from '../components/ProfileAvatar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useNotifications } from '../hooks/useNotifications';
 import { getCurrentUser } from '../services/auth';
-import { updateFaceEnrollment, updateProfilePicture, getProfile } from '../services/api';
+import { updateFaceEnrollment, updateProfilePicture, getProfile, updatePrivacySettings } from '../services/api';
 
 const SettingsPage = () => {
   const [activeSection, setActiveSection] = useState('security');
+  const [privacySettings, setPrivacySettings] = useState({
+    is_name_public: true,
+    is_id_number_public: false,
+    is_phone_public: false,
+    is_email_public: false
+  });
   const [faceMode, setFaceMode] = useState(null);
   const [facePassword, setFacePassword] = useState('');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -20,6 +26,7 @@ const SettingsPage = () => {
   const [faceLastUpdated, setFaceLastUpdated] = useState(null);
   const [profilePictureUrl, setProfilePictureUrl] = useState(null);
   const [uploaderKey, setUploaderKey] = useState(0);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const navigate = useNavigate();
   const { notify } = useNotifications();
 
@@ -28,7 +35,8 @@ const SettingsPage = () => {
 
   const fetchProfile = useCallback(async () => {
     if (!userId) return;
-
+    
+    setIsLoadingProfile(true);
     try {
       const result = await getProfile(userId);
       if (result.success) {
@@ -38,9 +46,20 @@ const SettingsPage = () => {
         if (result.data.profile_picture_url) {
           setProfilePictureUrl(result.data.profile_picture_url);
         }
+        setPrivacySettings({
+          is_name_public: result.data.is_name_public ?? true,
+          is_id_number_public: result.data.is_id_number_public ?? false,
+          is_phone_public: result.data.is_phone_public ?? false,
+          is_email_public: result.data.is_email_public ?? false,
+          is_dob_public: result.data.is_dob_public ?? false,
+          is_gender_public: result.data.is_gender_public ?? true,
+          is_nationality_public: result.data.is_nationality_public ?? false
+        });
       }
     } catch (err) {
       console.error('Failed to fetch profile settings:', err);
+    } finally {
+      setIsLoadingProfile(false);
     }
   }, [userId]);
 
@@ -52,6 +71,30 @@ const SettingsPage = () => {
 
     fetchProfile();
   }, [userId, navigate, fetchProfile]);
+
+  const handlePrivacyUpdate = async (key, value) => {
+    // Optimistic update
+    const prevSettings = { ...privacySettings };
+    setPrivacySettings(prev => ({ ...prev, [key]: value }));
+    
+    const result = await updatePrivacySettings(userId, { [key]: value });
+    
+    if (result.success) {
+        notify({
+            type: 'success',
+            title: 'Privacy Updated',
+            message: 'Your privacy settings have been saved.'
+        });
+    } else {
+        // Revert on failure
+        setPrivacySettings(prevSettings);
+        notify({
+            type: 'error',
+            title: 'Update Failed',
+            message: result.error || 'Could not update privacy settings.'
+        });
+    }
+  };
 
   const handleFaceCaptureComplete = async (imageFiles) => {
     const hasFiles =
@@ -202,6 +245,17 @@ const SettingsPage = () => {
               }`}
             >
               Security & Face ID
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveSection('privacy')}
+              className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium border ${
+                activeSection === 'privacy'
+                  ? 'bg-medical-primary text-white border-medical-primary'
+                  : 'bg-white text-medical-gray-700 border-medical-gray-200 hover:bg-medical-gray-50'
+              }`}
+            >
+              Privacy Settings
             </button>
             <button
               type="button"
@@ -371,6 +425,153 @@ const SettingsPage = () => {
                     </p>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {activeSection === 'privacy' && (
+              <div className="medical-card">
+                <div className="flex items-start justify-between mb-6">
+                  <div>
+                    <h2 className="text-2xl font-semibold mb-1">Privacy Settings</h2>
+                    <p className="text-sm text-medical-gray-600">
+                      Control what information is visible to other users when they recognize your face.
+                      Doctors and admins will always have full access.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Master Privacy Switch */}
+                  <div className={`flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white ${isLoadingProfile ? 'opacity-60' : ''}`}>
+                    <div>
+                      <h3 className="font-medium text-gray-900">Public Profile Visibility</h3>
+                      <p className="text-sm text-medical-gray-600">
+                        {privacySettings.is_name_public 
+                          ? "Your profile is visible to others. You can customize what details are shown below."
+                          : "Private Mode enabled. Your name is hidden and all other details are automatically concealed from public users."}
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer"
+                        checked={privacySettings.is_name_public}
+                        disabled={isLoadingProfile}
+                        onChange={(e) => handlePrivacyUpdate('is_name_public', e.target.checked)}
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-primary"></div>
+                    </label>
+                  </div>
+
+                  {/* Granular Settings - Disabled if Public Profile is OFF or Loading */}
+                  <div className={`space-y-4 transition-opacity duration-200 ${(!privacySettings.is_name_public || isLoadingProfile) ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <h4 className="font-medium text-medical-dark pt-2">Detailed Visibility Settings</h4>
+                    
+                    <div className="flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white">
+                      <div>
+                        <h3 className="font-medium text-gray-900">Show Government ID</h3>
+                        <p className="text-sm text-medical-gray-600">Allow others to see your ID number (Default: Hidden).</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer"
+                          checked={privacySettings.is_name_public && privacySettings.is_id_number_public}
+                          disabled={!privacySettings.is_name_public}
+                          onChange={(e) => handlePrivacyUpdate('is_id_number_public', e.target.checked)}
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-primary"></div>
+                      </label>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white">
+                      <div>
+                        <h3 className="font-medium text-gray-900">Show Phone Number</h3>
+                        <p className="text-sm text-medical-gray-600">Allow others to see your phone number.</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer"
+                          checked={privacySettings.is_name_public && privacySettings.is_phone_public}
+                          disabled={!privacySettings.is_name_public}
+                          onChange={(e) => handlePrivacyUpdate('is_phone_public', e.target.checked)}
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-primary"></div>
+                      </label>
+                    </div>
+
+                    {/*<div className="flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white">
+                      <div>
+                        <h3 className="font-medium text-gray-900">Show Email Address</h3>
+                        <p className="text-sm text-medical-gray-600">Allow others to see your email address.</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer"
+                          checked={privacySettings.is_name_public && privacySettings.is_email_public}
+                          disabled={!privacySettings.is_name_public}
+                          onChange={(e) => handlePrivacyUpdate('is_email_public', e.target.checked)}
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-primary"></div>
+                      </label>
+                    </div>*/}
+
+                    <div className="flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white">
+                      <div>
+                        <h3 className="font-medium text-gray-900">Show Age</h3>
+                        <p className="text-sm text-medical-gray-600">Allow others to see your age.</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer"
+                          checked={privacySettings.is_name_public && privacySettings.is_dob_public}
+                          disabled={!privacySettings.is_name_public}
+                          onChange={(e) => handlePrivacyUpdate('is_dob_public', e.target.checked)}
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-primary"></div>
+                      </label>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white">
+                      <div>
+                        <h3 className="font-medium text-gray-900">Show Gender</h3>
+                        <p className="text-sm text-medical-gray-600">Allow others to see your gender.</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer"
+                          checked={privacySettings.is_name_public && privacySettings.is_gender_public}
+                          disabled={!privacySettings.is_name_public}
+                          onChange={(e) => handlePrivacyUpdate('is_gender_public', e.target.checked)}
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-primary"></div>
+                      </label>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white">
+                      <div>
+                        <h3 className="font-medium text-gray-900">Show Nationality</h3>
+                        <p className="text-sm text-medical-gray-600">Allow others to see your nationality.</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer"
+                          checked={privacySettings.is_name_public && privacySettings.is_nationality_public}
+                          disabled={!privacySettings.is_name_public}
+                          onChange={(e) => handlePrivacyUpdate('is_nationality_public', e.target.checked)}
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-primary"></div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+
               </div>
             )}
 

@@ -11,6 +11,15 @@ from routers.auth import get_current_user, verify_user_access
 
 router = APIRouter(prefix="/api/profile", tags=["profile"])
 
+class PrivacySettingsUpdate(BaseModel):
+    is_name_public: Optional[bool] = None
+    is_id_number_public: Optional[bool] = None
+    is_phone_public: Optional[bool] = None
+    is_email_public: Optional[bool] = None
+    is_dob_public: Optional[bool] = None
+    is_gender_public: Optional[bool] = None
+    is_nationality_public: Optional[bool] = None
+
 class MainInfoUpdate(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
@@ -49,7 +58,7 @@ async def get_profile(user_id: str, current_user: dict = Depends(get_current_use
         role = (current_user or {}).get("role") or "user"
 
         # Get user basic info
-        user_response = supabase.client.table('users').select('id, name, email, phone, date_of_birth, gender, nationality, id_number, face_updated_at').eq('id', user_id).execute()
+        user_response = supabase.client.table('users').select('id, name, email, phone, date_of_birth, gender, nationality, id_number, face_updated_at, is_name_public, is_id_number_public, is_phone_public, is_email_public, is_dob_public, is_gender_public, is_nationality_public').eq('id', user_id).execute()
         
         if not user_response.data:
             raise HTTPException(status_code=404, detail="User not found")
@@ -89,6 +98,38 @@ async def get_profile(user_id: str, current_user: dict = Depends(get_current_use
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch profile: {str(e)}")
+
+@router.put("/privacy/{user_id}")
+async def update_privacy_settings(user_id: str, data: PrivacySettingsUpdate, current_user: dict = Depends(get_current_user)):
+    """
+    Update user's privacy settings
+    """
+    supabase = get_supabase_service()
+    
+    try:
+        verify_user_access(current_user, user_id)
+
+        # Prepare update data (only include non-None values)
+        update_data = {k: v for k, v in data.dict().items() if v is not None}
+        
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No data provided for update")
+        
+        # Update user
+        response = supabase.client.table('users').update(update_data).eq('id', user_id).execute()
+        
+        if not response.data:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        return {
+            "message": "Privacy settings updated successfully",
+            "data": response.data[0]
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update privacy settings: {str(e)}")
 
 @router.put("/main-info/{user_id}")
 async def update_main_info(user_id: str, data: MainInfoUpdate, current_user: dict = Depends(get_current_user)):
