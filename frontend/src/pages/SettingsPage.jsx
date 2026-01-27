@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import FaceUploader from '../components/FaceUploader';
 import MultiFaceCapture from '../components/MultiFaceCapture';
@@ -23,10 +23,13 @@ const SettingsPage = () => {
   const { notify } = useNotifications();
 
   const currentUser = getCurrentUser();
+  const userId = currentUser?.id;
 
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
+    if (!userId) return;
+
     try {
-      const result = await getProfile(currentUser.id);
+      const result = await getProfile(userId);
       if (result.success) {
         if (result.data.face_updated_at) {
           setFaceLastUpdated(result.data.face_updated_at);
@@ -38,17 +41,16 @@ const SettingsPage = () => {
     } catch (err) {
       console.error('Failed to fetch profile settings:', err);
     }
-  };
+  }, [userId]);
 
   useEffect(() => {
-    if (!currentUser) {
+    if (!userId) {
       navigate('/login', { replace: true });
       return;
     }
 
     fetchProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser?.id, navigate]);
+  }, [userId, navigate, fetchProfile]);
 
   const handleFaceCaptureComplete = async (imageFiles) => {
     const hasFiles =
