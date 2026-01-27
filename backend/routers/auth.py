@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from services.storage_service import get_supabase_service
 from services.face_service import get_face_service
 from services.profile_picture_service import get_profile_picture_url
+from services.security import verify_password, hash_password
 from utils.config import get_config
 
 router = APIRouter(prefix="/api", tags=["authentication"])
@@ -38,9 +39,6 @@ class FaceLoginConfirmRequest(BaseModel):
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str = Field(..., min_length=6)
-
-class DeleteAccountRequest(BaseModel):
-    password: str
 
 def create_access_token(data: dict):
     """Create JWT access token"""

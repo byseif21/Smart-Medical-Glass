@@ -7,9 +7,13 @@ from services.storage_service import get_supabase_service
 from services.profile_picture_service import get_profile_picture_url, save_profile_picture, ProfilePictureError
 from services.contact_service import get_emergency_contacts
 from services.face_service import get_face_service, FaceRecognitionError, upload_face_images, collect_face_images
+from services.security import verify_password
 from routers.auth import get_current_user, verify_user_access
 
 router = APIRouter(prefix="/api/profile", tags=["profile"])
+
+class DeleteAccountRequest(BaseModel):
+    password: str
 
 class PrivacySettingsUpdate(BaseModel):
     is_name_public: Optional[bool] = None
@@ -274,7 +278,7 @@ async def update_face_enrollment(
         stored_hash = user.get('password_hash')
 
         # Verify password
-        if not stored_hash or not bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8')):
+        if not stored_hash or not verify_password(password, stored_hash):
              raise HTTPException(status_code=403, detail="Invalid password")
 
         # Collect face images
@@ -359,3 +363,63 @@ async def update_profile_picture(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update profile picture: {str(e)}")
+
+@router.post("/delete")
+async def delete_account(
+    payload: DeleteAccountRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    Delete user account and all associated data
+    """
+    supabase = get_supabase_service()
+    face_service = get_face_service()
+    user_id = current_user.get("sub")
+    
+    try:
+        # Get current user to verify password
+        response = supabase.client.table('users').select('password_hash').eq('id', user_id).execute()
+        
+        if not response.data or len(response.data) == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        user = response.data[0]
+        
+        # Verify password
+        if not verify_password(payload.password, user['password_hash']):
+            raise HTTPException(status_code=400, detail="Invalid password")
+            
+        # 1. Delete face encoding from local file
+        face_service.delete_encoding(user_id)
+        
+        # 2. Delete images from Supabase Storage
+        # We try to delete all potential image files
+        potential_files = [
+            f"{user_id}/avatar.jpg",
+            f"{user_id}/front.jpg",
+            f"{user_id}/left.jpg",
+            f"{user_id}/right.jpg",
+            f"{user_id}/up.jpg",
+            f"{user_id}/down.jpg"
+        ]
+        try:
+            supabase.client.storage.from_('face-images').remove(potential_files)
+        except Exception as e:
+            print(f"Warning: Failed to cleanup storage for user {user_id}: {str(e)}")
+            # Continue execution, as account deletion is the priority
+            
+        # 3. Delete user from database
+        # This will cascade delete related records (medical_info, relatives, etc.)
+        delete_response = supabase.client.table('users').delete().eq('id', user_id).execute()
+        
+        if not delete_response.data:
+            # Note: Supabase delete might return empty data if successful but we can check if error occurred
+            # But usually it returns the deleted record
+            pass
+            
+        return {"message": "Account deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Account deletion failed: {str(e)}")

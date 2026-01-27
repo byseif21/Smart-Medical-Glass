@@ -1,17 +1,11 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from typing import Optional
-import bcrypt
 import json
 from services.face_service import get_face_service, FaceRecognitionError, upload_face_images, collect_face_images
 from services.storage_service import get_supabase_service
+from services.security import hash_password
 
 router = APIRouter(prefix="/api", tags=["registration"])
-
-def hash_password(password: str) -> str:
-    """Hash password using bcrypt"""
-    salt = bcrypt.gensalt()
-    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
-    return hashed.decode('utf-8')
 
 @router.post("/register")
 async def register_user(
