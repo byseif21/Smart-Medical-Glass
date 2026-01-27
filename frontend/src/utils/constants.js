@@ -2,6 +2,8 @@
  * Application-wide constants
  */
 
+// TODO refactor and move other constants in good order here
+
 export const defaultPrivacySettings = {
   is_name_public: true,
   is_id_number_public: false,
