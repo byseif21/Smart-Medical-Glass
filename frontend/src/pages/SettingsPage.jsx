@@ -12,6 +12,8 @@ const SettingsPage = () => {
   const [activeSection, setActiveSection] = useState('security');
   const [faceMode, setFaceMode] = useState(null);
   const [facePassword, setFacePassword] = useState('');
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [pendingFaceImages, setPendingFaceImages] = useState(null);
   const [isSubmittingFace, setIsSubmittingFace] = useState(false);
   const [isSubmittingAvatar, setIsSubmittingAvatar] = useState(false);
   const [selectedAvatarFile, setSelectedAvatarFile] = useState(null);
@@ -27,15 +29,6 @@ const SettingsPage = () => {
   }, [currentUser, navigate]);
 
   const handleFaceCaptureComplete = async (imageFiles) => {
-    if (!facePassword) {
-      notify({
-        type: 'warning',
-        title: 'Password required',
-        message: 'Please enter your account password before updating Face ID.',
-      });
-      return;
-    }
-
     const hasFiles =
       imageFiles instanceof File ||
       (imageFiles && typeof imageFiles === 'object' && Object.keys(imageFiles).length > 0);
@@ -49,16 +42,30 @@ const SettingsPage = () => {
       return;
     }
 
+    setPendingFaceImages(imageFiles);
+    setShowPasswordModal(true);
+  };
+
+  const handleConfirmFaceUpdate = async () => {
+    if (!facePassword) {
+      notify({
+        type: 'warning',
+        title: 'Password required',
+        message: 'Please enter your account password before updating Face ID.',
+      });
+      return;
+    }
+
     setIsSubmittingFace(true);
 
     try {
       const formData = new FormData();
       formData.append('password', facePassword);
 
-      if (imageFiles instanceof File) {
-        formData.append('image', imageFiles);
+      if (pendingFaceImages instanceof File) {
+        formData.append('image', pendingFaceImages);
       } else {
-        Object.entries(imageFiles).forEach(([angle, file]) => {
+        Object.entries(pendingFaceImages).forEach(([angle, file]) => {
           formData.append(`image_${angle}`, file);
         });
       }
@@ -73,6 +80,8 @@ const SettingsPage = () => {
         });
         setFacePassword('');
         setFaceMode(null);
+        setShowPasswordModal(false);
+        setPendingFaceImages(null);
       } else {
         notify({
           type: 'error',
@@ -204,18 +213,6 @@ const SettingsPage = () => {
                 </div>
 
                 <div className="space-y-6">
-                  <div>
-                    <label className="label-medical">Confirm with Password</label>
-                    <input
-                      type="password"
-                      value={facePassword}
-                      onChange={(e) => setFacePassword(e.target.value)}
-                      className="input-medical max-w-md"
-                      placeholder="Enter your account password"
-                      autoComplete="current-password"
-                    />
-                  </div>
-
                   {!faceMode ? (
                     <div className="space-y-4">
                       <p className="text-medical-gray-600 text-sm">
@@ -454,6 +451,54 @@ const SettingsPage = () => {
           </section>
         </div>
       </main>
+
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white rounded-lg shadow-medical-lg w-full max-w-md overflow-hidden animate-slide-up">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-medical-dark mb-2">Confirm Security Update</h3>
+              <p className="text-medical-gray-600 mb-6">
+                Please enter your account password to confirm the update to your Face ID template.
+              </p>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="label-medical">Password</label>
+                  <input
+                    type="password"
+                    value={facePassword}
+                    onChange={(e) => setFacePassword(e.target.value)}
+                    className="input-medical w-full"
+                    placeholder="Enter your password"
+                    autoFocus
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    onClick={() => {
+                      setShowPasswordModal(false);
+                      setFacePassword('');
+                      setPendingFaceImages(null);
+                    }}
+                    className="btn-medical-secondary"
+                    disabled={isSubmittingFace}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleConfirmFaceUpdate}
+                    className="btn-medical-primary"
+                    disabled={isSubmittingFace}
+                  >
+                    {isSubmittingFace ? 'Updating...' : 'Confirm & Update'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
