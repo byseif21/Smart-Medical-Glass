@@ -32,8 +32,7 @@ const SettingsPage = () => {
           setFaceLastUpdated(result.data.face_updated_at);
         }
         if (result.data.profile_picture_url) {
-          const timestamp = new Date().getTime();
-          setProfilePictureUrl(`${result.data.profile_picture_url}?t=${timestamp}`);
+          setProfilePictureUrl(result.data.profile_picture_url);
         }
       }
     } catch (err) {

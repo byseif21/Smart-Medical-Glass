@@ -36,10 +36,6 @@ const ProfileDashboard = () => {
     const result = await getProfile(viewingUserId);
 
     if (result.success) {
-      if (result.data.profile_picture_url) {
-        const timestamp = new Date().getTime();
-        result.data.profile_picture_url = `${result.data.profile_picture_url}?t=${timestamp}`;
-      }
       setProfile(result.data);
     } else {
       console.error('Failed to load profile:', result.error);

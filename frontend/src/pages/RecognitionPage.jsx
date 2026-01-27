@@ -33,10 +33,6 @@ const RecognitionPage = () => {
       const result = await recognizeFace(formData);
 
       if (result.success && result.data.match) {
-        if (result.data.profile_picture_url) {
-          const timestamp = new Date().getTime();
-          result.data.profile_picture_url = `${result.data.profile_picture_url}?t=${timestamp}`;
-        }
         setRecognizedPerson(result.data);
         setShowViewProfile(canViewFullProfile);
       } else {

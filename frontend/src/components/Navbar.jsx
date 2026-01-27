@@ -17,10 +17,6 @@ const Navbar = () => {
     try {
       const result = await getProfile(userId);
       if (result.success) {
-        if (result.data.profile_picture_url) {
-          const timestamp = new Date().getTime();
-          result.data.profile_picture_url = `${result.data.profile_picture_url}?t=${timestamp}`;
-        }
         setProfileData(result.data);
       }
     } catch (error) {

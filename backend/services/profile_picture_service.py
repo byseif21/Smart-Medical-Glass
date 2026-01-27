@@ -5,6 +5,7 @@ Handles retrieval of front-facing face images for profile display.
 
 from typing import Optional
 from supabase import Client
+from datetime import datetime
 
 
 class ProfilePictureError(Exception):
@@ -33,7 +34,7 @@ def get_profile_picture_url(user_id: str, supabase_client: Client) -> Optional[s
     try:
         # First try to get 'avatar' image
         response = supabase_client.table('face_images') \
-            .select('image_url') \
+            .select('image_url, created_at') \
             .eq('user_id', user_id) \
             .eq('image_type', 'avatar') \
             .order('created_at', desc=True) \
@@ -42,11 +43,20 @@ def get_profile_picture_url(user_id: str, supabase_client: Client) -> Optional[s
             
         if response.data and len(response.data) > 0:
             image_path = response.data[0]['image_url']
-            return supabase_client.storage.from_('face-images').get_public_url(image_path)
+            created_at = response.data[0]['created_at']
+            try:
+                dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                timestamp = int(dt.timestamp())
+            except ValueError:
+                # Fallback if parsing fails
+                timestamp = 0
+                
+            base_url = supabase_client.storage.from_('face-images').get_public_url(image_path)
+            return f"{base_url}?t={timestamp}"
 
         # Fallback to 'front' image
         response = supabase_client.table('face_images') \
-            .select('image_url') \
+            .select('image_url, created_at') \
             .eq('user_id', user_id) \
             .eq('image_type', 'front') \
             .order('created_at', desc=True) \
@@ -56,12 +66,18 @@ def get_profile_picture_url(user_id: str, supabase_client: Client) -> Optional[s
         # Check if any results were returned
         if response.data and len(response.data) > 0:
             image_path = response.data[0]['image_url']
+            created_at = response.data[0]['created_at']
+            try:
+                dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                timestamp = int(dt.timestamp())
+            except ValueError:
+                timestamp = 0
             
             # Convert storage path to full public URL
             # The image_path is stored as "user_id/front.jpg"
             # We need to get the public URL from the bucket
             public_url = supabase_client.storage.from_('face-images').get_public_url(image_path)
-            return public_url
+            return f"{public_url}?t={timestamp}"
         
         return None
         
