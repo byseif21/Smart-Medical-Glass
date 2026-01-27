@@ -60,28 +60,22 @@ async def recognize_face(image: UploadFile = File(...), current_user: dict = Dep
             is_privileged = role in ["doctor", "admin"]
 
             # Privacy checks
-            # Default to True for name/gender if not set (legacy users), False for ID/Phone/DOB/Nationality
-            show_name = is_privileged or user.get('is_name_public', True)
+            from utils.privacy import apply_privacy_settings
             
-            # If name is hidden and user is not privileged, hide everything else (Master Privacy Switch)
-            is_account_private = not show_name
-            
-            show_id = is_privileged or (user.get('is_id_number_public', False) and not is_account_private)
-            show_dob = is_privileged or (user.get('is_dob_public', False) and not is_account_private)
-            show_gender = is_privileged or (user.get('is_gender_public', True) and not is_account_private)
-            show_nationality = is_privileged or (user.get('is_nationality_public', False) and not is_account_private)
+            # Apply privacy settings
+            privacy_data = apply_privacy_settings(user, role)
             
             response_payload = {
                 "success": True,
                 "match": True,
                 "confidence": confidence,
                 "user_id": user['id'],
-                "name": user['name'] if show_name else "Private Account",
-                "profile_picture_url": profile_picture_url if show_name else None,
-                "date_of_birth": user.get('date_of_birth') if show_dob else None,
-                "gender": user.get('gender') if show_gender else None,
-                "nationality": user.get('nationality') if show_nationality else None,
-                "id_number": user.get('id_number') if show_id else None,
+                "name": privacy_data['name'],
+                "profile_picture_url": profile_picture_url if privacy_data['name'] != "Private Account" else None,
+                "date_of_birth": privacy_data['date_of_birth'],
+                "gender": privacy_data['gender'],
+                "nationality": privacy_data['nationality'],
+                "id_number": privacy_data['id_number'],
             }
             if is_privileged:
                 medical_response = supabase.client.table('medical_info').select('*').eq('user_id', user['id']).execute()
