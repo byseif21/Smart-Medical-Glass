@@ -87,12 +87,19 @@ WHAT'S MISSING:
 ────────────────────────────────────────────────────
 ✓ 'user_connections' table for linked connections
 ✓ 'is_external' column in 'relatives' table
+✓ UNIQUE constraint on face_images(user_id, image_type)
 ✓ Performance indexes
 ✓ Row Level Security policies
 
 After applying the schema, restart your backend server.
 
 ╚══════════════════════════════════════════════════════════════════════════════╝
+"""
+        # Append the unique constraint SQL to instructions
+        instructions += """
+-- Add this SQL to ensure data integrity:
+ALTER TABLE face_images 
+ADD CONSTRAINT unique_user_image_type UNIQUE (user_id, image_type);
 """
         return instructions
     
