@@ -19,6 +19,7 @@ const SettingsPage = () => {
   const [selectedAvatarFile, setSelectedAvatarFile] = useState(null);
   const [faceLastUpdated, setFaceLastUpdated] = useState(null);
   const [profilePictureUrl, setProfilePictureUrl] = useState(null);
+  const [uploaderKey, setUploaderKey] = useState(0);
   const navigate = useNavigate();
   const { notify } = useNotifications();
 
@@ -144,6 +145,7 @@ const SettingsPage = () => {
           message: 'Your profile photo has been updated successfully.',
         });
         setSelectedAvatarFile(null);
+        setUploaderKey((prev) => prev + 1);
         fetchProfile();
       } else {
         notify({
@@ -399,7 +401,11 @@ const SettingsPage = () => {
                   </div>
 
                   <div>
-                    <FaceUploader onUpload={handleAvatarUpload} />
+                    <FaceUploader
+                      key={uploaderKey}
+                      onUpload={handleAvatarUpload}
+                      isLoading={isSubmittingAvatar}
+                    />
                     {isSubmittingAvatar && (
                       <div className="mt-4">
                         <LoadingSpinner text="Saving new profile picture..." />
