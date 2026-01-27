@@ -78,15 +78,18 @@ async def get_profile(user_id: str, current_user: dict = Depends(get_current_use
             # Log error but don't fail the entire request
             print(f"Warning: Failed to retrieve profile picture for user {user_id}: {str(e)}")
         
+        # Inject profile picture url into user dict for privacy helper
+        user['profile_picture_url'] = profile_picture_url
+        
         is_self = current_user_id == user_id
         can_view_full = is_self or role in ["doctor", "admin"]
 
-        response_payload = {
-            **user,
-            "profile_picture_url": profile_picture_url
-        }
-
         if can_view_full:
+            # If authorized, return everything
+            response_payload = {
+                **user,
+                "profile_picture_url": profile_picture_url
+            }
             medical_response = supabase.client.table('medical_info').select('*').eq('user_id', user_id).execute()
             medical_info = medical_response.data[0] if medical_response.data else {}
             emergency_contacts = get_emergency_contacts(supabase.client, user_id)
@@ -94,7 +97,9 @@ async def get_profile(user_id: str, current_user: dict = Depends(get_current_use
             response_payload["medical_info"] = medical_info
             response_payload["emergency_contacts"] = emergency_contacts
         else:
-            response_payload.pop("email", None)
+            # Apply privacy settings for other users
+            from utils.privacy import apply_privacy_settings
+            response_payload = apply_privacy_settings(user, role)
 
         return response_payload
     
@@ -373,7 +378,6 @@ async def delete_account(
     Delete user account and all associated data
     """
     supabase = get_supabase_service()
-    face_service = get_face_service()
     user_id = current_user.get("sub")
     
     try:
@@ -389,33 +393,9 @@ async def delete_account(
         if not verify_password(payload.password, user['password_hash']):
             raise HTTPException(status_code=400, detail="Invalid password")
             
-        # 1. Delete face encoding from local file
-        face_service.delete_encoding(user_id)
-        
-        # 2. Delete images from Supabase Storage
-        # We try to delete all potential image files
-        potential_files = [
-            f"{user_id}/avatar.jpg",
-            f"{user_id}/front.jpg",
-            f"{user_id}/left.jpg",
-            f"{user_id}/right.jpg",
-            f"{user_id}/up.jpg",
-            f"{user_id}/down.jpg"
-        ]
-        try:
-            supabase.client.storage.from_('face-images').remove(potential_files)
-        except Exception as e:
-            print(f"Warning: Failed to cleanup storage for user {user_id}: {str(e)}")
-            # Continue execution, as account deletion is the priority
-            
-        # 3. Delete user from database
-        # This will cascade delete related records (medical_info, relatives, etc.)
-        delete_response = supabase.client.table('users').delete().eq('id', user_id).execute()
-        
-        if not delete_response.data:
-            # Note: Supabase delete might return empty data if successful but we can check if error occurred
-            # But usually it returns the deleted record
-            pass
+        # Perform full cleanup
+        from services.user_service import delete_user_fully
+        delete_user_fully(user_id)
             
         return {"message": "Account deleted successfully"}
         
