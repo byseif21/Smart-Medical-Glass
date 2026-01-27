@@ -75,7 +75,11 @@ export const registerUser = async (formData) => {
   } catch (error) {
     return {
       success: false,
-      error: error.response?.data?.error || error.message || 'Registration failed',
+      error:
+        error.response?.data?.detail ||
+        error.response?.data?.error ||
+        error.message ||
+        'Registration failed',
     };
   }
 };

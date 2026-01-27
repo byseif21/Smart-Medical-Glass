@@ -344,13 +344,17 @@ class FaceRecognitionService:
                 raise FaceRecognitionError("No images provided")
 
             encodings = []
+            errors = []
             for angle, image_data in images.items():
                 result = self.extract_encoding(image_data)
                 if result.success and result.encoding is not None:
                     encodings.append(result.encoding)
+                elif result.error:
+                    errors.append(f"{angle}: {result.error}")
             
             if not encodings:
-                raise FaceRecognitionError("No face detected in any of the images")
+                error_msg = "; ".join(errors) if errors else "No face detected in any of the images"
+                raise FaceRecognitionError(f"Face processing failed: {error_msg}")
             
             # Average the encodings
             import numpy as np
