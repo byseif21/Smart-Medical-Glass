@@ -59,7 +59,7 @@ export const changePassword = async (currentPassword, newPassword) => {
  */
 export const deleteAccount = async (password) => {
   try {
-    const response = await apiClient.post('/api/auth/delete-account', {
+    const response = await apiClient.post('/api/profile/delete', {
       password: password,
     });
     return {
