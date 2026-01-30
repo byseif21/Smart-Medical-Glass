@@ -41,6 +41,7 @@ ENV/
 backend/data/*.json
 backend/data/encodings.json
 !backend/data/.gitkeep
+data/
 
 # Frontend specific
 frontend/node_modules/
