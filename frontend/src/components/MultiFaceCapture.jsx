@@ -127,8 +127,14 @@ const MultiFaceCapture = ({ onComplete }) => {
         <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
 
         {/* Face guide overlay */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-64 h-80 border-4 border-medical-primary rounded-full opacity-50"></div>
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
+          <div className="relative w-56 h-72 rounded-[50%] shadow-[0_0_0_2000px_rgba(0,0,0,0.6)] overflow-hidden border-2 border-medical-primary/50 box-content">
+            <div className="absolute inset-0 rounded-[50%] shadow-[inset_0_0_20px_rgba(6,182,212,0.3)]"></div>
+            <div className="absolute left-0 right-0 h-1 bg-medical-primary/80 shadow-[0_0_15px_rgba(6,182,212,0.8)] animate-scan"></div>
+          </div>
+          <p className="text-white font-medium mt-6 text-sm drop-shadow-md bg-black/40 px-4 py-1.5 rounded-full backdrop-blur-sm border border-white/10">
+            Position face within frame
+          </p>
         </div>
 
         {/* Captured indicator */}
