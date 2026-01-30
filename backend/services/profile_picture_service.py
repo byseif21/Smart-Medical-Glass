@@ -7,6 +7,7 @@ from typing import Optional, TYPE_CHECKING
 from supabase import Client
 from datetime import datetime
 import logging
+from services.face_service import get_face_service
 
 if TYPE_CHECKING:
     from services.storage_service import SupabaseService
@@ -93,6 +94,15 @@ def save_profile_picture(user_id: str, image_bytes: bytes, supabase_service: 'Su
         ProfilePictureError: If upload or database update fails
     """
     try:
+        # auto-crop face
+        face_service = get_face_service()
+        cropped_bytes = face_service.crop_face(image_bytes)
+        
+        if cropped_bytes is None:
+            raise ProfilePictureError("Invalid image: strictly one face must be visible.")
+    
+        image_bytes = cropped_bytes
+
         file_path = f"{user_id}/avatar.jpg"
         
         # Always try to remove the file first.
