@@ -137,63 +137,53 @@ const ProfileDashboard = () => {
                 )}
               </div>
             </div>
-            <div className="flex gap-2 sm:gap-3">
+            <div className="flex items-center gap-1 sm:gap-3">
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className="btn-medical-secondary text-sm px-2 py-2 sm:px-4 bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100 flex flex-col sm:flex-row items-center gap-1 sm:gap-2"
+                  className="btn-medical-secondary flex flex-col sm:flex-row items-center justify-center p-1 sm:px-4 sm:py-2 gap-0.5 sm:gap-2 min-w-[50px] sm:min-w-0"
                   title="Admin"
                 >
-                  <Shield className="w-4 h-4" />
-                  <span className={isAdmin ? 'hidden' : 'hidden min-[400px]:inline text-[10px] sm:text-sm'}>
-                    Admin
-                  </span>
+                  <Shield className="w-4 h-4 sm:w-4 sm:h-4" />
+                  <span className="text-[9px] sm:text-sm leading-none sm:leading-normal">Admin</span>
                 </Link>
               )}
               {isViewingOther && (
                 <a
                   href="/dashboard"
-                  className="btn-medical-secondary text-sm px-2 py-2 sm:px-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2"
+                  className="btn-medical-secondary flex flex-col sm:flex-row items-center justify-center p-1 sm:px-4 sm:py-2 gap-0.5 sm:gap-2 min-w-[50px] sm:min-w-0"
                   title="Profile"
                 >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span className={isAdmin ? 'hidden' : 'hidden min-[400px]:inline text-[10px] sm:text-sm'}>
-                    Profile
-                  </span>
+                  <ArrowLeft className="w-4 h-4 sm:w-4 sm:h-4" />
+                  <span className="text-[9px] sm:text-sm leading-none sm:leading-normal">Profile</span>
                 </a>
               )}
               <Link
                 to="/recognize"
-                className="btn-medical-primary text-sm px-2 py-2 sm:px-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2"
+                className="btn-medical-primary flex flex-col sm:flex-row items-center justify-center p-1 sm:px-4 sm:py-2 gap-0.5 sm:gap-2 min-w-[50px] sm:min-w-0"
                 title="Recognize"
               >
-                <ScanFace className="w-4 h-4" />
-                <span className={isAdmin ? 'hidden' : 'hidden min-[400px]:inline text-[10px] sm:text-sm'}>
-                  Recognize
-                </span>
+                <ScanFace className="w-4 h-4 sm:w-4 sm:h-4" />
+                <span className="text-[9px] sm:text-sm leading-none sm:leading-normal">Recognize</span>
               </Link>
               {!isViewingOther && (
                 <Link
                   to="/settings"
-                  className="btn-medical-secondary text-sm px-2 py-2 sm:px-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2"
+                  className="btn-medical-secondary flex flex-col sm:flex-row items-center justify-center p-1 sm:px-4 sm:py-2 gap-0.5 sm:gap-2 min-w-[50px] sm:min-w-0"
                   title="Settings"
                 >
-                  <Settings className="w-4 h-4" />
-                  <span className={isAdmin ? 'hidden' : 'hidden min-[400px]:inline text-[10px] sm:text-sm'}>
-                    Settings
-                  </span>
+                  <Settings className="w-4 h-4 sm:w-4 sm:h-4" />
+                  <span className="text-[9px] sm:text-sm leading-none sm:leading-normal">Settings</span>
                 </Link>
               )}
               {!isViewingOther && (
                 <button
                   onClick={handleLogout}
-                  className="btn-medical-secondary text-sm px-2 py-2 sm:px-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2"
+                  className="btn-medical-secondary flex flex-col sm:flex-row items-center justify-center p-1 sm:px-4 sm:py-2 gap-0.5 sm:gap-2 min-w-[50px] sm:min-w-0"
                   title="Logout"
                 >
-                  <LogOut className="w-4 h-4" />
-                  <span className={isAdmin ? 'hidden' : 'hidden min-[400px]:inline text-[10px] sm:text-sm'}>
-                    Logout
-                  </span>
+                  <LogOut className="w-4 h-4 sm:w-4 sm:h-4" />
+                  <span className="text-[9px] sm:text-sm leading-none sm:leading-normal">Logout</span>
                 </button>
               )}
             </div>
