@@ -1,18 +1,10 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { User, X } from 'lucide-react';
 import '../styles/glassmorphism.css';
 
 // Fallback user icon SVG component (defined outside render)
-const UserIcon = () => (
-  <svg
-    className="w-full h-full text-white"
-    fill="currentColor"
-    viewBox="0 0 24 24"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-  </svg>
-);
+const UserIcon = ({ className }) => <User className={className} />;
 
 const ProfileAvatar = ({ imageUrl, userName, size = 'md', className = '', clickable = true }) => {
   const [imageError, setImageError] = useState(false);
@@ -21,8 +13,9 @@ const ProfileAvatar = ({ imageUrl, userName, size = 'md', className = '', clicka
   // Size variants mapping
   const sizeClasses = {
     sm: 'w-10 h-10', // 40px
-    md: 'w-20 h-20', // 80px
-    lg: 'w-28 h-28', // 112px
+    md: 'w-14 h-14', // 56px
+    lg: 'w-20 h-20', // 80px
+    xl: 'w-28 h-28', // 112px
   };
 
   // Get the appropriate size class
@@ -93,7 +86,7 @@ const ProfileAvatar = ({ imageUrl, userName, size = 'md', className = '', clicka
       >
         {showFallback ? (
           <div className="w-full h-full flex items-center justify-center bg-medical-primary p-2.5">
-            <UserIcon />
+            <UserIcon className="w-full h-full text-white" />
           </div>
         ) : (
           <img
@@ -121,14 +114,7 @@ const ProfileAvatar = ({ imageUrl, userName, size = 'md', className = '', clicka
               className="absolute -top-12 right-0 text-white hover:text-medical-primary transition-colors duration-500"
               aria-label="Close"
             >
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              <X className="w-8 h-8" />
             </button>
 
             {/* Enlarged image */}

@@ -1,299 +1,286 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { getCurrentUser, clearSession, isAuthenticated } from '../services/auth';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import {
+  Menu,
+  Shield,
+  LogOut,
+  Settings,
+  ScanFace,
+  LayoutDashboard,
+  LogIn,
+  UserPlus,
+  Home,
+} from 'lucide-react';
+import { getCurrentUser, clearSession as logout, getUserRole } from '../services/auth';
 import { getProfile } from '../services/api';
+import MobileMenuDrawer from './MobileMenuDrawer';
 import ProfileAvatar from './ProfileAvatar';
-import '../styles/glassmorphism.css';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [user, setUser] = useState(null);
-  const [profileData, setProfileData] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const location = useLocation();
+  const [scrolled, setScrolled] = useState(false);
+  const [user, setUser] = useState(() => getCurrentUser());
+  const [userRole, setUserRole] = useState(() => getUserRole());
+  const [userProfile, setUserProfile] = useState(null);
   const navigate = useNavigate();
-
-  const fetchProfileData = async (userId) => {
-    try {
-      const result = await getProfile(userId);
-      if (result.success) {
-        setProfileData(result.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch profile data:', error);
-    }
-  };
+  const location = useLocation();
 
   useEffect(() => {
-    const checkAuth = () => {
-      const user = getCurrentUser();
-
-      if (isAuthenticated() && user) {
-        setUser({ id: user.id, email: user.name }); // Minimal user object
-        setIsAdmin(user.role === 'admin');
-        fetchProfileData(user.id);
-      } else {
-        setUser(null);
-        setIsAdmin(false);
-        setProfileData(null);
-      }
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
     };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
-    checkAuth();
+  useEffect(() => {
+    // Check user status
+    if (user) {
+      getProfile(user.id).then((result) => {
+        if (result.success) {
+          setUserProfile(result.data);
+        }
+      });
+    }
+  }, [user]);
 
-    // Listen for storage changes (in case of login/logout in another tab/component)
-    window.addEventListener('storage', checkAuth);
-    return () => window.removeEventListener('storage', checkAuth);
-  }, [location.pathname]); // Re-check on route change
-
-  const handleSignOut = () => {
-    clearSession();
+  const handleLogout = () => {
+    logout();
     setUser(null);
-    setProfileData(null);
-    setIsAdmin(false);
+    setUserRole(null);
     navigate('/login');
-  };
-
-  const handleSignIn = () => {
-    navigate('/login');
+    setIsMenuOpen(false);
   };
 
   const isActive = (path) => location.pathname === path;
+  const isAdmin = (userRole || '').toLowerCase() === 'admin';
+
+  const navigationItems = [
+    // Main Nav
+    {
+      path: '/',
+      label: 'Home',
+      icon: Home,
+      show: true,
+      position: 'main',
+    },
+    {
+      path: '/recognize',
+      label: 'Recognize',
+      icon: ScanFace,
+      show: !!user,
+      position: 'main',
+    },
+    {
+      path: '/dashboard',
+      label: 'Dashboard',
+      icon: LayoutDashboard,
+      show: !!user,
+      position: 'main',
+    },
+    // User Actions
+    {
+      path: '/admin',
+      label: 'Admin',
+      icon: Shield,
+      show: !!user && isAdmin,
+      position: 'user',
+      desktopIcon: true, // icon only on desktop
+      mobileStyle:
+        'bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 hover:text-red-700 hover:border-red-200',
+    },
+    {
+      path: '/settings',
+      label: 'Settings',
+      icon: Settings,
+      show: !!user,
+      position: 'user',
+      mobileOnly: true, // Only show in mobile menu
+    },
+    // Auth Actions
+    {
+      path: '/login',
+      label: 'Login',
+      icon: LogIn,
+      show: !user,
+      position: 'auth',
+    },
+    {
+      path: '/register',
+      label: 'Register',
+      icon: UserPlus,
+      show: !user,
+      position: 'auth',
+    },
+  ];
+
+  const mainNavItems = navigationItems.filter((item) => item.position === 'main' && item.show);
 
   return (
-    <nav className="glass-card sticky top-0 z-50 mx-4 mt-4 mb-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo/Brand */}
-          <div className="flex-shrink-0">
-            <Link to="/" className="flex items-center space-x-2">
-              <span className="text-2xl font-bold neon-gradient-text">Smart Glass AI</span>
+    <>
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          scrolled ? 'bg-white/80 backdrop-blur-lg shadow-sm' : 'bg-transparent'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16 md:h-20">
+            {/* Logo */}
+            <Link to="/" className="flex items-center gap-2 group">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-medical-primary to-medical-secondary flex items-center justify-center text-white shadow-lg shadow-medical-primary/20 group-hover:scale-105 transition-transform duration-300">
+                <ScanFace className="w-5 h-5 md:w-6 md:h-6" />
+              </div>
+              <span className="text-xl md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-medical-primary to-medical-secondary">
+                MedGlass
+              </span>
             </Link>
-          </div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:block">
-            <div className="ml-10 flex items-center space-x-4">
-              <Link
-                to="/"
-                className={`px-4 py-2 rounded-lg transition-all duration-300 ${
-                  isActive('/')
-                    ? 'glow-border-pink text-white'
-                    : 'text-gray-300 hover:text-white hover:glow-border-blue'
-                }`}
-              >
-                Home
-              </Link>
+            {/* Desktop Navigation */}
+            <div className="flex max-sm:hidden items-center gap-8">
+              <div className="flex items-center gap-6">
+                {mainNavItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`text-sm font-medium transition-colors hover:text-medical-primary ${
+                      isActive(item.path) ? 'text-medical-primary' : 'text-gray-600'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
 
-              {isAdmin && (
-                <Link
-                  to="/admin"
-                  className={`px-4 py-2 rounded-lg transition-all duration-300 ${
-                    isActive('/admin')
-                      ? 'glow-border-pink text-white'
-                      : 'text-gray-300 hover:text-white hover:glow-border-blue'
-                  }`}
-                >
-                  Admin
-                </Link>
-              )}
-
-              <Link
-                to="/recognize"
-                className={`px-4 py-2 rounded-lg transition-all duration-300 ${
-                  isActive('/recognize')
-                    ? 'glow-border-pink text-white'
-                    : 'text-gray-300 hover:text-white hover:glow-border-blue'
-                }`}
-              >
-                Recognize
-              </Link>
-
-              {user && (
-                <Link
-                  to="/settings"
-                  className={`px-4 py-2 rounded-lg transition-all duration-300 ${
-                    isActive('/settings')
-                      ? 'glow-border-pink text-white'
-                      : 'text-gray-300 hover:text-white hover:glow-border-blue'
-                  }`}
-                >
-                  Settings
-                </Link>
-              )}
-
-              {/* Auth Buttons */}
-              <div className="ml-4 flex items-center space-x-2">
+              <div className="flex items-center gap-3 pl-6 border-l border-gray-200">
                 {user ? (
-                  <>
-                    <Link to="/dashboard" className="flex items-center">
+                  <div className="flex items-center gap-3">
+                    {/* Desktop */}
+                    {navigationItems
+                      .filter((item) => item.position === 'user' && item.show && item.desktopIcon)
+                      .map((item) => (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          className="p-2 rounded-full hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors"
+                          title={item.label}
+                        >
+                          <item.icon className="w-5 h-5" />
+                        </Link>
+                      ))}
+
+                    <div className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-gray-50 border border-gray-100">
                       <ProfileAvatar
-                        imageUrl={profileData?.profile_picture_url}
-                        userName={user.email}
+                        imageUrl={userProfile?.profile_picture_url}
+                        userName={user.name}
                         size="sm"
-                        className="mr-2"
+                        clickable={false}
                       />
-                      <span className="text-sm text-gray-400 px-3 hover:text-white transition-colors">
-                        {user.email}
-                      </span>
-                    </Link>
-                    <button onClick={handleSignOut} className="glass-button text-sm">
-                      Sign Out
+                      <span className="text-sm font-medium text-gray-700">{user.name}</span>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="p-2 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                      title="Logout"
+                    >
+                      <LogOut className="w-5 h-5" />
                     </button>
-                  </>
+                  </div>
                 ) : (
                   <>
-                    <Link
-                      to="/register"
-                      className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                    >
-                      Register
-                    </Link>
-                    <button onClick={handleSignIn} className="neon-button text-sm">
-                      Sign In
-                    </button>
+                    {navigationItems
+                      .filter((item) => item.position === 'auth' && item.show)
+                      .map((item) => (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          className={
+                            item.path === '/register'
+                              ? 'px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-medical-primary to-medical-secondary text-white shadow-lg shadow-medical-primary/25 hover:shadow-xl hover:shadow-medical-primary/30 hover:-translate-y-0.5 transition-all'
+                              : 'px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-medical-primary hover:bg-gray-50 transition-all'
+                          }
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
                   </>
                 )}
               </div>
             </div>
-          </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden">
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="glass-button p-2"
-              aria-label="Toggle menu"
-            >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                {isMenuOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                )}
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile menu */}
-      {isMenuOpen && (
-        <div className="md:hidden border-t border-white/10">
-          <div className="px-2 pt-2 pb-3 space-y-1">
-            <Link
-              to="/"
-              onClick={() => setIsMenuOpen(false)}
-              className={`block px-3 py-2 rounded-lg transition-all duration-300 ${
-                isActive('/')
-                  ? 'glow-border-pink text-white'
-                  : 'text-gray-300 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              Home
-            </Link>
-
-            {isAdmin && (
-              <Link
-                to="/admin"
-                onClick={() => setIsMenuOpen(false)}
-                className={`block px-3 py-2 rounded-lg transition-all duration-300 ${
-                  isActive('/admin')
-                    ? 'glow-border-pink text-white'
-                    : 'text-gray-300 hover:text-white hover:bg-white/5'
-                }`}
+            {/* Mobile menu button */}
+            <div className="sm:hidden">
+              <button
+                onClick={() => setIsMenuOpen(true)}
+                className="p-2 rounded-lg text-gray-600 hover:text-medical-primary hover:bg-gray-50 transition-colors"
+                aria-label="Open menu"
               >
-                Admin
-              </Link>
-            )}
-
-            <Link
-              to="/recognize"
-              onClick={() => setIsMenuOpen(false)}
-              className={`block px-3 py-2 rounded-lg transition-all duration-300 ${
-                isActive('/recognize')
-                  ? 'glow-border-pink text-white'
-                  : 'text-gray-300 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              Recognize
-            </Link>
-
-            {user && (
-              <Link
-                to="/settings"
-                onClick={() => setIsMenuOpen(false)}
-                className={`block px-3 py-2 rounded-lg transition-all duration-300 ${
-                  isActive('/settings')
-                    ? 'glow-border-pink text-white'
-                    : 'text-gray-300 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                Settings
-              </Link>
-            )}
-
-            {/* Mobile Auth Section */}
-            <div className="pt-4 border-t border-white/10 mt-4">
-              {user ? (
-                <>
-                  <Link
-                    to="/dashboard"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="px-3 py-2 flex items-center space-x-3 hover:bg-white/5 rounded-lg"
-                  >
-                    <ProfileAvatar
-                      imageUrl={profileData?.profile_picture_url}
-                      userName={user.email}
-                      size="sm"
-                    />
-                    <span className="text-sm text-gray-400">{user.email}</span>
-                  </Link>
-                  <button
-                    onClick={() => {
-                      handleSignOut();
-                      setIsMenuOpen(false);
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/5"
-                  >
-                    Sign Out
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link
-                    to="/register"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/5"
-                  >
-                    Register
-                  </Link>
-                  <button
-                    onClick={() => {
-                      handleSignIn();
-                      setIsMenuOpen(false);
-                    }}
-                    className="w-full neon-button mt-2"
-                  >
-                    Sign In
-                  </button>
-                </>
-              )}
+                <Menu className="h-6 w-6" />
+              </button>
             </div>
           </div>
         </div>
-      )}
-    </nav>
+      </nav>
+
+      {/* Mobile Menu Drawer */}
+      <MobileMenuDrawer
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        footer={
+          user && (
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-red-100 text-red-600 font-medium hover:bg-red-50 transition-all"
+            >
+              <LogOut className="w-5 h-5" />
+              Logout
+            </button>
+          )
+        }
+      >
+        {user && (
+          <div className="flex items-center gap-3 px-4 py-3 mb-4 bg-gray-50 rounded-xl border border-gray-100">
+            <ProfileAvatar
+              imageUrl={userProfile?.profile_picture_url}
+              userName={user.name}
+              size="md"
+              clickable={false}
+            />
+            <div className="flex flex-col">
+              <span className="font-medium text-gray-900">{user.name}</span>
+              <span className="text-xs text-gray-500 capitalize">{userRole}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Render all navigation items for mobile */}
+        {navigationItems
+          .filter((item) => item.show)
+          .map((item) => {
+            const Icon = item.icon;
+            const defaultStyle = `flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${
+              isActive(item.path)
+                ? 'bg-medical-primary/5 text-medical-primary'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-medical-primary'
+            }`;
+
+            const className = item.mobileStyle
+              ? `flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${isActive(item.path) ? 'bg-red-100 text-red-700 border border-red-200' : item.mobileStyle}`
+              : defaultStyle;
+
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => setIsMenuOpen(false)}
+                className={className}
+              >
+                <Icon className="w-5 h-5" />
+                {item.label}
+              </Link>
+            );
+          })}
+      </MobileMenuDrawer>
+    </>
   );
 };
 

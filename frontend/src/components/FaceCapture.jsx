@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { Camera, RefreshCw } from 'lucide-react';
 
 const overlayStyles = {
   sm: {
@@ -131,12 +132,17 @@ const FaceCapture = ({ onCapture, variant = 'lg' }) => {
           <button
             onClick={capturePhoto}
             disabled={!stream}
-            className="flex-1 btn-medical-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 btn-medical-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
+            <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
             Capture Photo
           </button>
         ) : (
-          <button onClick={retake} className="flex-1 btn-medical-secondary">
+          <button
+            onClick={retake}
+            className="flex-1 btn-medical-secondary flex items-center justify-center gap-2"
+          >
+            <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
             Retake Photo
           </button>
         )}

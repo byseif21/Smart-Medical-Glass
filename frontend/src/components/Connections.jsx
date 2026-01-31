@@ -13,6 +13,15 @@ import {
 import ConnectionCard from './ConnectionCard';
 import AddConnectionModal from './AddConnectionModal';
 import LoadingSpinner from './LoadingSpinner';
+import {
+  UserPlus,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+  Link as LinkIcon,
+  Globe,
+  Users,
+} from 'lucide-react';
 
 const Connections = ({ targetUserId }) => {
   const [loading, setLoading] = useState(false);
@@ -235,15 +244,13 @@ const Connections = ({ targetUserId }) => {
   return (
     <div className="medical-card">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
         <h2 className="text-2xl font-semibold">Family Connections</h2>
         <button
           onClick={() => setShowAddModal(true)}
-          className="btn-medical-primary text-sm px-4 py-2 flex items-center gap-2"
+          className="btn-medical-primary text-sm px-4 py-2 flex items-center gap-2 w-full sm:w-auto justify-center"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
+          <UserPlus className="w-5 h-5" />
           Add Connection
         </button>
       </div>
@@ -251,9 +258,7 @@ const Connections = ({ targetUserId }) => {
       {/* Success Message */}
       {successMessage && (
         <div className="mb-4 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg flex items-center gap-2">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
+          <CheckCircle className="w-5 h-5" />
           {successMessage}
         </div>
       )}
@@ -261,14 +266,7 @@ const Connections = ({ targetUserId }) => {
       {/* Error Message */}
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg flex items-center gap-2">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
+          <AlertCircle className="w-5 h-5" />
           {error}
         </div>
       )}
@@ -277,19 +275,7 @@ const Connections = ({ targetUserId }) => {
       {pendingRequests.length > 0 && (
         <div className="mb-8 p-4 bg-medical-light/30 border border-medical-primary/20 rounded-xl">
           <h3 className="text-lg font-semibold text-medical-dark mb-4 flex items-center gap-2">
-            <svg
-              className="w-5 h-5 text-medical-primary"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
-              />
-            </svg>
+            <Clock className="w-5 h-5 text-medical-primary" />
             Pending Connection Requests ({pendingRequests.length})
           </h3>
           <div className="space-y-3">
@@ -305,7 +291,7 @@ const Connections = ({ targetUserId }) => {
                     Wants to connect as: {request.relationship}
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-shrink-0">
                   <button
                     onClick={() => handleAcceptRequest(request.id)}
                     className="px-3 py-1.5 bg-medical-primary text-white text-sm font-medium rounded-md hover:bg-medical-primary-dark transition-colors"
@@ -329,19 +315,7 @@ const Connections = ({ targetUserId }) => {
       {linkedConnections.length > 0 && (
         <div className="mb-8">
           <h3 className="text-lg font-semibold text-medical-dark mb-4 flex items-center gap-2">
-            <svg
-              className="w-5 h-5 text-medical-primary"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-              />
-            </svg>
+            <LinkIcon className="w-5 h-5 text-medical-primary" />
             Linked Connections ({linkedConnections.length})
           </h3>
           <div className="grid md:grid-cols-2 gap-4">
@@ -363,19 +337,7 @@ const Connections = ({ targetUserId }) => {
       {externalContacts.length > 0 && (
         <div className="mb-8">
           <h3 className="text-lg font-semibold text-medical-dark mb-4 flex items-center gap-2">
-            <svg
-              className="w-5 h-5 text-medical-gray-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-              />
-            </svg>
+            <Globe className="w-5 h-5 text-medical-gray-600" />
             External Contacts ({externalContacts.length})
           </h3>
           <div className="grid md:grid-cols-2 gap-4">
@@ -396,19 +358,7 @@ const Connections = ({ targetUserId }) => {
       {/* Empty State */}
       {allConnectionsCount === 0 && !loading && (
         <div className="text-center py-12 text-medical-gray-500">
-          <svg
-            className="w-16 h-16 mx-auto mb-4 text-medical-gray-300"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-            />
-          </svg>
+          <Users className="w-16 h-16 mx-auto mb-4 text-medical-gray-300" />
           <p className="mb-4">No connections added yet</p>
           <button onClick={() => setShowAddModal(true)} className="btn-medical-primary px-6 py-2">
             Add Your First Connection

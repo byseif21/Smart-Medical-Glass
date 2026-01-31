@@ -1,5 +1,24 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import {
+  User,
+  Shield,
+  ScanFace,
+  Key,
+  ArrowLeft,
+  Camera,
+  Upload,
+  ChevronLeft,
+  Eye,
+  EyeOff,
+  Check,
+  FileText,
+  Phone,
+  Calendar,
+  Flag,
+  Trash2,
+  AlertTriangle,
+} from 'lucide-react';
 import FaceUploader from '../components/FaceUploader';
 import MultiFaceCapture from '../components/MultiFaceCapture';
 import ProfileAvatar from '../components/ProfileAvatar';
@@ -41,12 +60,22 @@ const SettingsPage = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const navigate = useNavigate();
   const { notify } = useNotifications();
 
   const currentUser = getCurrentUser();
   const userId = currentUser?.id;
+
+  const settingsTabs = [
+    { id: 'profile', label: 'Profile Picture', icon: User },
+    { id: 'privacy', label: 'Privacy Settings', icon: Shield },
+    { id: 'device', label: 'Smart Glass Preferences', icon: ScanFace },
+    { id: 'security', label: 'Security & Face ID', icon: Key },
+  ];
 
   const handleDeleteAccount = async (e) => {
     e.preventDefault();
@@ -312,13 +341,19 @@ const SettingsPage = () => {
     }
   };
 
+  const passwordRequirements = [
+    { label: 'At least 8 characters', met: passwordForm.newPassword.length >= 8 },
+    { label: 'At least one number', met: /\d/.test(passwordForm.newPassword) },
+    { label: 'At least one letter', met: /[a-zA-Z]/.test(passwordForm.newPassword) },
+  ];
+
   return (
     <div className="min-h-screen bg-medical-gradient">
       <header className="bg-white shadow-medical">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <ProfileAvatar imageUrl={null} userName={currentUser?.name} size="md" />
+              <ProfileAvatar imageUrl={null} userName={currentUser?.name} size="lg" />
               <div>
                 <h1 className="text-xl font-bold text-medical-dark">Account Settings</h1>
                 <p className="text-sm text-medical-gray-600">
@@ -327,8 +362,12 @@ const SettingsPage = () => {
               </div>
             </div>
             <div className="flex gap-3">
-              <Link to="/dashboard" className="btn-medical-secondary text-sm px-4 py-2">
-                ← Back to Profile
+              <Link
+                to="/dashboard"
+                className="btn-medical-secondary text-sm px-4 py-2 flex items-center gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to Profile
               </Link>
             </div>
           </div>
@@ -338,50 +377,24 @@ const SettingsPage = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid lg:grid-cols-[260px,1fr] gap-6">
           <aside className="space-y-3">
-            <button
-              type="button"
-              onClick={() => setActiveSection('profile')}
-              className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium border ${
-                activeSection === 'profile'
-                  ? 'bg-medical-primary text-white border-medical-primary'
-                  : 'bg-white text-medical-gray-700 border-medical-gray-200 hover:bg-medical-gray-50'
-              }`}
-            >
-              Profile Picture
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveSection('privacy')}
-              className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium border ${
-                activeSection === 'privacy'
-                  ? 'bg-medical-primary text-white border-medical-primary'
-                  : 'bg-white text-medical-gray-700 border-medical-gray-200 hover:bg-medical-gray-50'
-              }`}
-            >
-              Privacy Settings
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveSection('device')}
-              className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium border ${
-                activeSection === 'device'
-                  ? 'bg-medical-primary text-white border-medical-primary'
-                  : 'bg-white text-medical-gray-700 border-medical-gray-200 hover:bg-medical-gray-50'
-              }`}
-            >
-              Smart Glass Preferences
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveSection('security')}
-              className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium border ${
-                activeSection === 'security'
-                  ? 'bg-medical-primary text-white border-medical-primary'
-                  : 'bg-white text-medical-gray-700 border-medical-gray-200 hover:bg-medical-gray-50'
-              }`}
-            >
-              Security & Face ID
-            </button>
+            {settingsTabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveSection(tab.id)}
+                  className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium border flex items-center gap-3 transition-colors ${
+                    activeSection === tab.id
+                      ? 'bg-medical-primary text-white border-medical-primary'
+                      : 'bg-white text-medical-gray-700 border-medical-gray-200 hover:bg-medical-gray-50'
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  {tab.label}
+                </button>
+              );
+            })}
           </aside>
 
           <section className="space-y-6">
@@ -402,7 +415,7 @@ const SettingsPage = () => {
                     <ProfileAvatar
                       imageUrl={profilePictureUrl}
                       userName={currentUser?.name}
-                      size="lg"
+                      size="xl"
                       clickable={false}
                       className="shadow-medical-lg"
                     />
@@ -450,7 +463,10 @@ const SettingsPage = () => {
                     className={`flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white ${isLoadingProfile ? 'opacity-60' : ''}`}
                   >
                     <div>
-                      <h3 className="font-medium text-gray-900">Public Profile Visibility</h3>
+                      <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                        <Eye className="w-5 h-5 text-medical-primary" />
+                        Public Profile Visibility
+                      </h3>
                       <p className="text-sm text-medical-gray-600">
                         {privacySettings.is_name_public
                           ? 'Your profile is visible to others. You can customize what details are shown below.'
@@ -479,7 +495,10 @@ const SettingsPage = () => {
 
                     <div className="flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white">
                       <div>
-                        <h3 className="font-medium text-gray-900">Show Government ID</h3>
+                        <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-medical-primary" />
+                          Show Government ID
+                        </h3>
                         <p className="text-sm text-medical-gray-600">
                           Allow others to see your ID number (Default: Hidden).
                         </p>
@@ -502,7 +521,10 @@ const SettingsPage = () => {
 
                     <div className="flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white">
                       <div>
-                        <h3 className="font-medium text-gray-900">Show Phone Number</h3>
+                        <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                          <Phone className="w-4 h-4 text-medical-primary" />
+                          Show Phone Number
+                        </h3>
                         <p className="text-sm text-medical-gray-600">
                           Allow others to see your phone number.
                         </p>
@@ -540,7 +562,10 @@ const SettingsPage = () => {
 
                     <div className="flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white">
                       <div>
-                        <h3 className="font-medium text-gray-900">Show Age</h3>
+                        <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-medical-primary" />
+                          Show Age
+                        </h3>
                         <p className="text-sm text-medical-gray-600">
                           Allow others to see your age.
                         </p>
@@ -559,7 +584,10 @@ const SettingsPage = () => {
 
                     <div className="flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white">
                       <div>
-                        <h3 className="font-medium text-gray-900">Show Gender</h3>
+                        <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                          <User className="w-4 h-4 text-medical-primary" />
+                          Show Gender
+                        </h3>
                         <p className="text-sm text-medical-gray-600">
                           Allow others to see your gender.
                         </p>
@@ -582,7 +610,10 @@ const SettingsPage = () => {
 
                     <div className="flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white">
                       <div>
-                        <h3 className="font-medium text-gray-900">Show Nationality</h3>
+                        <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                          <Flag className="w-4 h-4 text-medical-primary" />
+                          Show Nationality
+                        </h3>
                         <p className="text-sm text-medical-gray-600">
                           Allow others to see your nationality.
                         </p>
@@ -685,7 +716,10 @@ const SettingsPage = () => {
                 <div className="medical-card">
                   <div className="flex items-start justify-between mb-6">
                     <div>
-                      <h2 className="text-2xl font-semibold mb-1">Face ID</h2>
+                      <h2 className="text-2xl font-semibold mb-1 flex items-center gap-2">
+                        <ScanFace className="w-6 h-6 text-medical-primary" />
+                        Face ID
+                      </h2>
                       <p className="text-sm text-medical-gray-600">
                         Re-register your face to keep recognition accurate. For security, we require
                         your password before updating your face template.
@@ -718,25 +752,7 @@ const SettingsPage = () => {
                             onClick={() => setFaceMode('capture')}
                             className="w-full btn-medical-primary flex items-center justify-center gap-3"
                           >
-                            <svg
-                              className="w-6 h-6"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                              />
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
-                              />
-                            </svg>
+                            <Camera className="w-6 h-6" />
                             Capture Multi-Angle Face
                           </button>
                           <button
@@ -744,19 +760,7 @@ const SettingsPage = () => {
                             onClick={() => setFaceMode('upload')}
                             className="w-full btn-medical-secondary flex items-center justify-center gap-3"
                           >
-                            <svg
-                              className="w-6 h-6"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                              />
-                            </svg>
+                            <Upload className="w-6 h-6" />
                             Upload New Face Photo
                           </button>
                         </div>
@@ -768,19 +772,7 @@ const SettingsPage = () => {
                           onClick={() => setFaceMode(null)}
                           className="mb-4 text-medical-primary hover:text-cyan-700 flex items-center gap-2 text-sm"
                         >
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M15 19l-7-7 7-7"
-                            />
-                          </svg>
+                          <ChevronLeft className="w-5 h-5" />
                           Back
                         </button>
                         <MultiFaceCapture onComplete={handleFaceCaptureComplete} />
@@ -792,19 +784,7 @@ const SettingsPage = () => {
                           onClick={() => setFaceMode(null)}
                           className="mb-4 text-medical-primary hover:text-cyan-700 flex items-center gap-2 text-sm"
                         >
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M15 19l-7-7 7-7"
-                            />
-                          </svg>
+                          <ChevronLeft className="w-5 h-5" />
                           Back
                         </button>
                         <FaceUploader onUpload={handleFaceCaptureComplete} />
@@ -830,7 +810,10 @@ const SettingsPage = () => {
                 <div className="medical-card mt-6">
                   <div className="flex items-start justify-between mb-6">
                     <div>
-                      <h2 className="text-2xl font-semibold mb-1">Password</h2>
+                      <h2 className="text-2xl font-semibold mb-1 flex items-center gap-2">
+                        <Key className="w-6 h-6 text-medical-primary" />
+                        Password
+                      </h2>
                       <p className="text-sm text-medical-gray-600">
                         Update your account password to keep your account secure.
                       </p>
@@ -854,47 +837,109 @@ const SettingsPage = () => {
                           <label className="label-medical block text-sm font-medium text-medical-gray-700 mb-1">
                             Current Password
                           </label>
-                          <input
-                            type="password"
-                            name="currentPassword"
-                            value={passwordForm.currentPassword}
-                            onChange={handlePasswordChange}
-                            className="input-medical w-full"
-                            placeholder="Enter current password"
-                            required
-                          />
+                          <div className="relative">
+                            <input
+                              type={showCurrentPassword ? 'text' : 'password'}
+                              name="currentPassword"
+                              value={passwordForm.currentPassword}
+                              onChange={handlePasswordChange}
+                              className="input-medical w-full pr-10"
+                              placeholder="Enter current password"
+                              required
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-medical-primary transition-colors"
+                            >
+                              {showCurrentPassword ? (
+                                <EyeOff className="w-4 h-4" />
+                              ) : (
+                                <Eye className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
                         </div>
 
                         <div>
                           <label className="label-medical block text-sm font-medium text-medical-gray-700 mb-1">
                             New Password
                           </label>
-                          <input
-                            type="password"
-                            name="newPassword"
-                            value={passwordForm.newPassword}
-                            onChange={handlePasswordChange}
-                            className="input-medical w-full"
-                            placeholder="Enter new password (min. 8 chars)"
-                            minLength={8}
-                            required
-                          />
+                          <div className="relative">
+                            <input
+                              type={showNewPassword ? 'text' : 'password'}
+                              name="newPassword"
+                              value={passwordForm.newPassword}
+                              onChange={handlePasswordChange}
+                              className="input-medical w-full pr-10"
+                              placeholder="Enter new password"
+                              required
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowNewPassword(!showNewPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-medical-primary transition-colors"
+                            >
+                              {showNewPassword ? (
+                                <EyeOff className="w-4 h-4" />
+                              ) : (
+                                <Eye className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                          {/* Password Requirements Checklist */}
+                          <div className="mt-3 space-y-2 bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                            <p className="text-xs font-medium text-gray-500 mb-2">
+                              Password must contain:
+                            </p>
+                            {passwordRequirements.map((req, index) => (
+                              <div
+                                key={index}
+                                className={`flex items-center gap-2 text-xs transition-colors duration-200 ${
+                                  req.met ? 'text-green-600 font-medium' : 'text-gray-500'
+                                }`}
+                              >
+                                <div
+                                  className={`w-4 h-4 rounded-full flex items-center justify-center border transition-colors duration-200 ${
+                                    req.met
+                                      ? 'bg-green-100 border-green-500'
+                                      : 'bg-gray-50 border-gray-300'
+                                  }`}
+                                >
+                                  {req.met && <Check className="w-2.5 h-2.5" />}
+                                </div>
+                                <span>{req.label}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
 
                         <div>
                           <label className="label-medical block text-sm font-medium text-medical-gray-700 mb-1">
                             Confirm New Password
                           </label>
-                          <input
-                            type="password"
-                            name="confirmPassword"
-                            value={passwordForm.confirmPassword}
-                            onChange={handlePasswordChange}
-                            className="input-medical w-full"
-                            placeholder="Confirm new password"
-                            minLength={8}
-                            required
-                          />
+                          <div className="relative">
+                            <input
+                              type={showConfirmPassword ? 'text' : 'password'}
+                              name="confirmPassword"
+                              value={passwordForm.confirmPassword}
+                              onChange={handlePasswordChange}
+                              className="input-medical w-full pr-10"
+                              placeholder="Confirm new password"
+                              required
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-medical-primary transition-colors"
+                            >
+                              {showConfirmPassword ? (
+                                <EyeOff className="w-4 h-4" />
+                              ) : (
+                                <Eye className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
                         </div>
 
                         <div className="flex gap-3 pt-2">
@@ -929,7 +974,10 @@ const SettingsPage = () => {
                 <div className="medical-card mt-6 border-red-100 bg-red-50/30">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h2 className="text-2xl font-semibold mb-1 text-red-600">Danger Zone</h2>
+                      <h2 className="text-2xl font-semibold mb-1 text-red-600 flex items-center gap-2">
+                        <AlertTriangle className="w-6 h-6" />
+                        Danger Zone
+                      </h2>
                       <p className="text-sm text-red-600/80">
                         Permanently delete your account and all associated data.
                       </p>
@@ -937,8 +985,9 @@ const SettingsPage = () => {
                     <button
                       type="button"
                       onClick={() => setShowDeleteModal(true)}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors shadow-sm"
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors shadow-sm flex items-center gap-2"
                     >
+                      <Trash2 className="w-4 h-4" />
                       Delete Account
                     </button>
                   </div>
