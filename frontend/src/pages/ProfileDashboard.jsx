@@ -199,13 +199,13 @@ const ProfileDashboard = () => {
               <ProfileAvatar
                 imageUrl={profile?.profile_picture_url}
                 userName={profile?.name}
-                size="sm"
+                size="md"
                 className="sm:hidden"
               />
               <ProfileAvatar
                 imageUrl={profile?.profile_picture_url}
                 userName={profile?.name}
-                size="md"
+                size="lg"
                 className="max-sm:hidden"
               />
               <div>

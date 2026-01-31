@@ -149,7 +149,7 @@ const RecognitionPage = () => {
                   <ProfileAvatar
                     imageUrl={recognizedPerson.profile_picture_url}
                     userName={recognizedPerson.name}
-                    size="lg"
+                    size="xl"
                     clickable={true}
                     className="border-2 border-medical-primary"
                   />

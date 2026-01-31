@@ -308,7 +308,7 @@ const LoginPage = () => {
                 <ProfileAvatar
                   imageUrl={faceIdentifiedUser.profile_picture_url}
                   userName={faceIdentifiedUser.name}
-                  size="lg"
+                  size="xl"
                   clickable={false}
                   className="shadow-medical-lg"
                 />

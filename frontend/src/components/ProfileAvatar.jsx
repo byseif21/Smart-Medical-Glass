@@ -13,8 +13,9 @@ const ProfileAvatar = ({ imageUrl, userName, size = 'md', className = '', clicka
   // Size variants mapping
   const sizeClasses = {
     sm: 'w-10 h-10', // 40px
-    md: 'w-20 h-20', // 80px
-    lg: 'w-28 h-28', // 112px
+    md: 'w-14 h-14', // 56px
+    lg: 'w-20 h-20', // 80px
+    xl: 'w-28 h-28', // 112px
   };
 
   // Get the appropriate size class
