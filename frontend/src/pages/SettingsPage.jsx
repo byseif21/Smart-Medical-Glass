@@ -1,6 +1,24 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Shield, ScanFace, Key, ArrowLeft, Camera, Upload, ChevronLeft } from 'lucide-react';
+import {
+  User,
+  Shield,
+  ScanFace,
+  Key,
+  ArrowLeft,
+  Camera,
+  Upload,
+  ChevronLeft,
+  Eye,
+  EyeOff,
+  Check,
+  FileText,
+  Phone,
+  Calendar,
+  Flag,
+  Trash2,
+  AlertTriangle,
+} from 'lucide-react';
 import FaceUploader from '../components/FaceUploader';
 import MultiFaceCapture from '../components/MultiFaceCapture';
 import ProfileAvatar from '../components/ProfileAvatar';
@@ -42,6 +60,9 @@ const SettingsPage = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const navigate = useNavigate();
   const { notify } = useNotifications();
@@ -313,6 +334,12 @@ const SettingsPage = () => {
     }
   };
 
+  const passwordRequirements = [
+    { label: 'At least 8 characters', met: passwordForm.newPassword.length >= 8 },
+    { label: 'At least one number', met: /\d/.test(passwordForm.newPassword) },
+    { label: 'At least one letter', met: /[a-zA-Z]/.test(passwordForm.newPassword) },
+  ];
+
   return (
     <div className="min-h-screen bg-medical-gradient">
       <header className="bg-white shadow-medical">
@@ -459,7 +486,10 @@ const SettingsPage = () => {
                     className={`flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white ${isLoadingProfile ? 'opacity-60' : ''}`}
                   >
                     <div>
-                      <h3 className="font-medium text-gray-900">Public Profile Visibility</h3>
+                      <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                        <Eye className="w-5 h-5 text-medical-primary" />
+                        Public Profile Visibility
+                      </h3>
                       <p className="text-sm text-medical-gray-600">
                         {privacySettings.is_name_public
                           ? 'Your profile is visible to others. You can customize what details are shown below.'
@@ -488,7 +518,10 @@ const SettingsPage = () => {
 
                     <div className="flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white">
                       <div>
-                        <h3 className="font-medium text-gray-900">Show Government ID</h3>
+                        <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-medical-primary" />
+                          Show Government ID
+                        </h3>
                         <p className="text-sm text-medical-gray-600">
                           Allow others to see your ID number (Default: Hidden).
                         </p>
@@ -511,7 +544,10 @@ const SettingsPage = () => {
 
                     <div className="flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white">
                       <div>
-                        <h3 className="font-medium text-gray-900">Show Phone Number</h3>
+                        <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                          <Phone className="w-4 h-4 text-medical-primary" />
+                          Show Phone Number
+                        </h3>
                         <p className="text-sm text-medical-gray-600">
                           Allow others to see your phone number.
                         </p>
@@ -549,7 +585,10 @@ const SettingsPage = () => {
 
                     <div className="flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white">
                       <div>
-                        <h3 className="font-medium text-gray-900">Show Age</h3>
+                        <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-medical-primary" />
+                          Show Age
+                        </h3>
                         <p className="text-sm text-medical-gray-600">
                           Allow others to see your age.
                         </p>
@@ -568,7 +607,10 @@ const SettingsPage = () => {
 
                     <div className="flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white">
                       <div>
-                        <h3 className="font-medium text-gray-900">Show Gender</h3>
+                        <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                          <User className="w-4 h-4 text-medical-primary" />
+                          Show Gender
+                        </h3>
                         <p className="text-sm text-medical-gray-600">
                           Allow others to see your gender.
                         </p>
@@ -591,7 +633,10 @@ const SettingsPage = () => {
 
                     <div className="flex items-center justify-between p-4 border border-medical-gray-200 rounded-lg bg-white">
                       <div>
-                        <h3 className="font-medium text-gray-900">Show Nationality</h3>
+                        <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                          <Flag className="w-4 h-4 text-medical-primary" />
+                          Show Nationality
+                        </h3>
                         <p className="text-sm text-medical-gray-600">
                           Allow others to see your nationality.
                         </p>
@@ -694,7 +739,10 @@ const SettingsPage = () => {
                 <div className="medical-card">
                   <div className="flex items-start justify-between mb-6">
                     <div>
-                      <h2 className="text-2xl font-semibold mb-1">Face ID</h2>
+                      <h2 className="text-2xl font-semibold mb-1 flex items-center gap-2">
+                        <ScanFace className="w-6 h-6 text-medical-primary" />
+                        Face ID
+                      </h2>
                       <p className="text-sm text-medical-gray-600">
                         Re-register your face to keep recognition accurate. For security, we require
                         your password before updating your face template.
@@ -785,7 +833,10 @@ const SettingsPage = () => {
                 <div className="medical-card mt-6">
                   <div className="flex items-start justify-between mb-6">
                     <div>
-                      <h2 className="text-2xl font-semibold mb-1">Password</h2>
+                      <h2 className="text-2xl font-semibold mb-1 flex items-center gap-2">
+                        <Key className="w-6 h-6 text-medical-primary" />
+                        Password
+                      </h2>
                       <p className="text-sm text-medical-gray-600">
                         Update your account password to keep your account secure.
                       </p>
@@ -809,47 +860,109 @@ const SettingsPage = () => {
                           <label className="label-medical block text-sm font-medium text-medical-gray-700 mb-1">
                             Current Password
                           </label>
-                          <input
-                            type="password"
-                            name="currentPassword"
-                            value={passwordForm.currentPassword}
-                            onChange={handlePasswordChange}
-                            className="input-medical w-full"
-                            placeholder="Enter current password"
-                            required
-                          />
+                          <div className="relative">
+                            <input
+                              type={showCurrentPassword ? 'text' : 'password'}
+                              name="currentPassword"
+                              value={passwordForm.currentPassword}
+                              onChange={handlePasswordChange}
+                              className="input-medical w-full pr-10"
+                              placeholder="Enter current password"
+                              required
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-medical-primary transition-colors"
+                            >
+                              {showCurrentPassword ? (
+                                <EyeOff className="w-4 h-4" />
+                              ) : (
+                                <Eye className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
                         </div>
 
                         <div>
                           <label className="label-medical block text-sm font-medium text-medical-gray-700 mb-1">
                             New Password
                           </label>
-                          <input
-                            type="password"
-                            name="newPassword"
-                            value={passwordForm.newPassword}
-                            onChange={handlePasswordChange}
-                            className="input-medical w-full"
-                            placeholder="Enter new password (min. 8 chars)"
-                            minLength={8}
-                            required
-                          />
+                          <div className="relative">
+                            <input
+                              type={showNewPassword ? 'text' : 'password'}
+                              name="newPassword"
+                              value={passwordForm.newPassword}
+                              onChange={handlePasswordChange}
+                              className="input-medical w-full pr-10"
+                              placeholder="Enter new password"
+                              required
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowNewPassword(!showNewPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-medical-primary transition-colors"
+                            >
+                              {showNewPassword ? (
+                                <EyeOff className="w-4 h-4" />
+                              ) : (
+                                <Eye className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                          {/* Password Requirements Checklist */}
+                          <div className="mt-3 space-y-2 bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                            <p className="text-xs font-medium text-gray-500 mb-2">
+                              Password must contain:
+                            </p>
+                            {passwordRequirements.map((req, index) => (
+                              <div
+                                key={index}
+                                className={`flex items-center gap-2 text-xs transition-colors duration-200 ${
+                                  req.met ? 'text-green-600 font-medium' : 'text-gray-500'
+                                }`}
+                              >
+                                <div
+                                  className={`w-4 h-4 rounded-full flex items-center justify-center border transition-colors duration-200 ${
+                                    req.met
+                                      ? 'bg-green-100 border-green-500'
+                                      : 'bg-gray-50 border-gray-300'
+                                  }`}
+                                >
+                                  {req.met && <Check className="w-2.5 h-2.5" />}
+                                </div>
+                                <span>{req.label}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
 
                         <div>
                           <label className="label-medical block text-sm font-medium text-medical-gray-700 mb-1">
                             Confirm New Password
                           </label>
-                          <input
-                            type="password"
-                            name="confirmPassword"
-                            value={passwordForm.confirmPassword}
-                            onChange={handlePasswordChange}
-                            className="input-medical w-full"
-                            placeholder="Confirm new password"
-                            minLength={8}
-                            required
-                          />
+                          <div className="relative">
+                            <input
+                              type={showConfirmPassword ? 'text' : 'password'}
+                              name="confirmPassword"
+                              value={passwordForm.confirmPassword}
+                              onChange={handlePasswordChange}
+                              className="input-medical w-full pr-10"
+                              placeholder="Confirm new password"
+                              required
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-medical-primary transition-colors"
+                            >
+                              {showConfirmPassword ? (
+                                <EyeOff className="w-4 h-4" />
+                              ) : (
+                                <Eye className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
                         </div>
 
                         <div className="flex gap-3 pt-2">
@@ -884,7 +997,10 @@ const SettingsPage = () => {
                 <div className="medical-card mt-6 border-red-100 bg-red-50/30">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h2 className="text-2xl font-semibold mb-1 text-red-600">Danger Zone</h2>
+                      <h2 className="text-2xl font-semibold mb-1 text-red-600 flex items-center gap-2">
+                        <AlertTriangle className="w-6 h-6" />
+                        Danger Zone
+                      </h2>
                       <p className="text-sm text-red-600/80">
                         Permanently delete your account and all associated data.
                       </p>
@@ -892,8 +1008,9 @@ const SettingsPage = () => {
                     <button
                       type="button"
                       onClick={() => setShowDeleteModal(true)}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors shadow-sm"
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors shadow-sm flex items-center gap-2"
                     >
+                      <Trash2 className="w-4 h-4" />
                       Delete Account
                     </button>
                   </div>
