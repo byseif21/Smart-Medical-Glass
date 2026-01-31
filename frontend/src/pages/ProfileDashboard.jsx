@@ -141,7 +141,7 @@ const ProfileDashboard = () => {
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className="btn-medical-secondary flex flex-col sm:flex-row items-center justify-center p-1 sm:px-4 sm:py-2 gap-0.5 sm:gap-2 min-w-[50px] sm:min-w-0"
+                  className="btn-medical-secondary bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100 flex flex-col sm:flex-row items-center justify-center p-1 sm:px-4 sm:py-2 gap-0.5 sm:gap-2 min-w-[50px] sm:min-w-0"
                   title="Admin"
                 >
                   <Shield className="w-4 h-4 sm:w-4 sm:h-4" />
@@ -194,12 +194,12 @@ const ProfileDashboard = () => {
       {/* Tabs */}
       <div className="bg-white border-b border-medical-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex gap-8">
+          <nav className="flex justify-around sm:justify-start sm:gap-8">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
+                className={`py-2 sm:py-4 px-2 border-b-2 font-medium text-[10px] sm:text-sm transition-colors flex flex-col sm:flex-row items-center gap-1 sm:gap-2 ${
                   activeTab === tab.id
                     ? 'border-medical-primary text-medical-primary'
                     : 'border-transparent text-medical-gray-500 hover:text-medical-gray-700 hover:border-medical-gray-300'
