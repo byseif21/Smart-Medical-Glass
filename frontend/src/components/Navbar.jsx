@@ -55,6 +55,67 @@ const Navbar = () => {
   const isActive = (path) => location.pathname === path;
   const isAdmin = (userRole || '').toLowerCase() === 'admin';
 
+  const navigationItems = [
+    // Main Nav
+    {
+      path: '/',
+      label: 'Home',
+      icon: Home,
+      show: true,
+      position: 'main',
+    },
+    {
+      path: '/recognize',
+      label: 'Recognize',
+      icon: ScanFace,
+      show: !!user,
+      position: 'main',
+    },
+    {
+      path: '/dashboard',
+      label: 'Dashboard',
+      icon: LayoutDashboard,
+      show: !!user,
+      position: 'main',
+    },
+    // User Actions
+    {
+      path: '/admin',
+      label: 'Admin',
+      icon: Shield,
+      show: !!user && isAdmin,
+      position: 'user',
+      desktopIcon: true, // icon only on desktop
+      mobileStyle:
+        'bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 hover:text-red-700 hover:border-red-200',
+    },
+    {
+      path: '/settings',
+      label: 'Settings',
+      icon: Settings,
+      show: !!user,
+      position: 'user',
+      mobileOnly: true, // Only show in mobile menu
+    },
+    // Auth Actions
+    {
+      path: '/login',
+      label: 'Login',
+      icon: LogIn,
+      show: !user,
+      position: 'auth',
+    },
+    {
+      path: '/register',
+      label: 'Register',
+      icon: UserPlus,
+      show: !user,
+      position: 'auth',
+    },
+  ];
+
+  const mainNavItems = navigationItems.filter((item) => item.position === 'main' && item.show);
+
   return (
     <>
       <nav
@@ -75,50 +136,38 @@ const Navbar = () => {
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-8">
+            <div className="flex max-sm:hidden items-center gap-8">
               <div className="flex items-center gap-6">
-                <Link
-                  to="/"
-                  className={`text-sm font-medium transition-colors hover:text-medical-primary ${
-                    isActive('/') ? 'text-medical-primary' : 'text-gray-600'
-                  }`}
-                >
-                  Home
-                </Link>
-                {user && (
-                  <>
-                    <Link
-                      to="/recognize"
-                      className={`text-sm font-medium transition-colors hover:text-medical-primary ${
-                        isActive('/recognize') ? 'text-medical-primary' : 'text-gray-600'
-                      }`}
-                    >
-                      Recognize
-                    </Link>
-                    <Link
-                      to="/dashboard"
-                      className={`text-sm font-medium transition-colors hover:text-medical-primary ${
-                        isActive('/dashboard') ? 'text-medical-primary' : 'text-gray-600'
-                      }`}
-                    >
-                      Dashboard
-                    </Link>
-                  </>
-                )}
+                {mainNavItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`text-sm font-medium transition-colors hover:text-medical-primary ${
+                      isActive(item.path) ? 'text-medical-primary' : 'text-gray-600'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
               </div>
 
               <div className="flex items-center gap-3 pl-6 border-l border-gray-200">
                 {user ? (
                   <div className="flex items-center gap-3">
-                    {isAdmin && (
-                      <Link
-                        to="/admin"
-                        className="p-2 rounded-full hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors"
-                        title="Admin Dashboard"
-                      >
-                        <Shield className="w-5 h-5" />
-                      </Link>
-                    )}
+                    {/* Desktop */}
+                    {navigationItems
+                      .filter((item) => item.position === 'user' && item.show && item.desktopIcon)
+                      .map((item) => (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          className="p-2 rounded-full hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors"
+                          title={item.label}
+                        >
+                          <item.icon className="w-5 h-5" />
+                        </Link>
+                      ))}
+
                     <div className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-gray-50 border border-gray-100">
                       <ProfileAvatar
                         imageUrl={userProfile?.profile_picture_url}
@@ -138,25 +187,28 @@ const Navbar = () => {
                   </div>
                 ) : (
                   <>
-                    <Link
-                      to="/login"
-                      className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-medical-primary hover:bg-gray-50 transition-all"
-                    >
-                      Login
-                    </Link>
-                    <Link
-                      to="/register"
-                      className="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-medical-primary to-medical-secondary text-white shadow-lg shadow-medical-primary/25 hover:shadow-xl hover:shadow-medical-primary/30 hover:-translate-y-0.5 transition-all"
-                    >
-                      Register
-                    </Link>
+                    {navigationItems
+                      .filter((item) => item.position === 'auth' && item.show)
+                      .map((item) => (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          className={
+                            item.path === '/register'
+                              ? 'px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-medical-primary to-medical-secondary text-white shadow-lg shadow-medical-primary/25 hover:shadow-xl hover:shadow-medical-primary/30 hover:-translate-y-0.5 transition-all'
+                              : 'px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-medical-primary hover:bg-gray-50 transition-all'
+                          }
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
                   </>
                 )}
               </div>
             </div>
 
             {/* Mobile menu button */}
-            <div className="md:hidden">
+            <div className="sm:hidden">
               <button
                 onClick={() => setIsMenuOpen(true)}
                 className="p-2 rounded-lg text-gray-600 hover:text-medical-primary hover:bg-gray-50 transition-colors"
@@ -200,103 +252,33 @@ const Navbar = () => {
           </div>
         )}
 
-        <Link
-          to="/"
-          onClick={() => setIsMenuOpen(false)}
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${
-            isActive('/')
-              ? 'bg-medical-primary/5 text-medical-primary'
-              : 'text-gray-600 hover:bg-gray-50 hover:text-medical-primary'
-          }`}
-        >
-          <Home className="w-5 h-5" />
-          Home
-        </Link>
+        {/* Render all navigation items for mobile */}
+        {navigationItems
+          .filter((item) => item.show)
+          .map((item) => {
+            const Icon = item.icon;
+            const defaultStyle = `flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${
+              isActive(item.path)
+                ? 'bg-medical-primary/5 text-medical-primary'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-medical-primary'
+            }`;
 
-        {user ? (
-          <>
-            <Link
-              to="/dashboard"
-              onClick={() => setIsMenuOpen(false)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${
-                isActive('/dashboard')
-                  ? 'bg-medical-primary/5 text-medical-primary'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-medical-primary'
-              }`}
-            >
-              <LayoutDashboard className="w-5 h-5" />
-              Dashboard
-            </Link>
+            const className = item.mobileStyle
+              ? `flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${isActive(item.path) ? 'bg-red-100 text-red-700 border border-red-200' : item.mobileStyle}`
+              : defaultStyle;
 
-            <Link
-              to="/recognize"
-              onClick={() => setIsMenuOpen(false)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${
-                isActive('/recognize')
-                  ? 'bg-medical-primary/5 text-medical-primary'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-medical-primary'
-              }`}
-            >
-              <ScanFace className="w-5 h-5" />
-              Recognize
-            </Link>
-
-            <Link
-              to="/settings"
-              onClick={() => setIsMenuOpen(false)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${
-                isActive('/settings')
-                  ? 'bg-medical-primary/5 text-medical-primary'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-medical-primary'
-              }`}
-            >
-              <Settings className="w-5 h-5" />
-              Settings
-            </Link>
-
-            {isAdmin && (
+            return (
               <Link
-                to="/admin"
+                key={item.path}
+                to={item.path}
                 onClick={() => setIsMenuOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${
-                  isActive('/admin')
-                    ? 'bg-red-100 text-red-700 border border-red-200'
-                    : 'text-red-600 bg-red-50 border border-red-100 hover:bg-red-100 hover:text-red-700 hover:border-red-200'
-                }`}
+                className={className}
               >
-                <Shield className="w-5 h-5" />
-                Admin
+                <Icon className="w-5 h-5" />
+                {item.label}
               </Link>
-            )}
-          </>
-        ) : (
-          <>
-            <Link
-              to="/login"
-              onClick={() => setIsMenuOpen(false)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${
-                isActive('/login')
-                  ? 'bg-medical-primary/5 text-medical-primary'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-medical-primary'
-              }`}
-            >
-              <LogIn className="w-5 h-5" />
-              Login
-            </Link>
-            <Link
-              to="/register"
-              onClick={() => setIsMenuOpen(false)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${
-                isActive('/register')
-                  ? 'bg-medical-primary/5 text-medical-primary'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-medical-primary'
-              }`}
-            >
-              <UserPlus className="w-5 h-5" />
-              Register
-            </Link>
-          </>
-        )}
+            );
+          })}
       </MobileMenuDrawer>
     </>
   );
