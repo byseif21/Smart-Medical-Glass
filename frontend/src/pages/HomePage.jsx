@@ -12,10 +12,13 @@ import {
   Globe,
   Cpu,
   ChevronRight,
+  Menu,
+  X,
 } from 'lucide-react';
 
 const HomePage = () => {
   const [scrolled, setScrolled] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -41,7 +44,7 @@ const HomePage = () => {
             </span>
           </div>
 
-          <div className="hidden md:flex items-center gap-8">
+          <div className="max-md:hidden flex items-center gap-8">
             <a
               href="#features"
               className="text-sm font-medium text-slate-600 hover:text-medical-primary transition-colors"
@@ -75,7 +78,58 @@ const HomePage = () => {
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            className="md:hidden p-2 text-slate-600 hover:text-slate-900"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
+            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
+
+        {/* Mobile Nav Overlay */}
+        {isMenuOpen && (
+          <div className="absolute top-full left-0 w-full bg-white border-b border-slate-100 shadow-xl p-6 md:hidden flex flex-col gap-4 animate-fade-in">
+            <a
+              href="#features"
+              className="text-lg font-medium text-slate-600"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Features
+            </a>
+            <a
+              href="#security"
+              className="text-lg font-medium text-slate-600"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Security
+            </a>
+            <a
+              href="#api"
+              className="text-lg font-medium text-slate-600"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              API
+            </a>
+            <hr className="border-slate-100" />
+            <Link
+              to="/login"
+              className="text-lg font-medium text-slate-600"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Sign In
+            </Link>
+            <Link
+              to="/register"
+              className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-slate-900 text-white font-medium"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Get Started
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        )}
       </nav>
 
       {/* Hero Section */}
@@ -129,13 +183,13 @@ const HomePage = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-medical-accent" />
-                  <span>&lt; 100ms Latency</span>
+                  <span>Real-time Processing</span>
                 </div>
               </div>
             </div>
 
             {/* Mock UI */}
-            <div className="relative lg:h-[600px] flex items-center justify-center">
+            <div className="relative lg:h-[600px] flex items-center justify-center mt-12 lg:mt-0">
               <div className="relative w-full max-w-md aspect-[4/5] bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-slate-800">
                 {/* Screen Header */}
                 <div className="absolute top-0 w-full p-6 flex justify-between items-center z-20">
@@ -154,7 +208,7 @@ const HomePage = () => {
                   <div className="w-full aspect-square relative mb-8">
                     {/* Scanning Animation */}
                     <div className="absolute inset-0 rounded-2xl border border-medical-primary/30 overflow-hidden">
-                      <div className="absolute top-0 left-0 w-full h-1 bg-medical-primary shadow-[0_0_20px_rgba(8,145,178,0.8)] animate-[slideDown_2s_linear_infinite]" />
+                      <div className="absolute top-0 left-0 w-full h-1 bg-medical-primary shadow-[0_0_20px_rgba(8,145,178,0.8)] animate-[scan_4s_cubic-bezier(0.4,0,0.2,1)_infinite]" />
                     </div>
 
                     {/* Face Grid */}
@@ -174,7 +228,7 @@ const HomePage = () => {
 
                   <div className="space-y-4 w-full">
                     <div className="h-2 w-2/3 bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-medical-primary w-2/3 animate-[width_2s_ease-in-out_infinite]"></div>
+                      <div className="h-full bg-medical-primary animate-progress-load"></div>
                     </div>
                     <div className="flex justify-between text-xs font-mono text-slate-400">
                       <span>VERIFYING IDENTITY...</span>
@@ -200,15 +254,15 @@ const HomePage = () => {
               </div>
 
               {/* Floating Cards */}
-              <div className="absolute top-20 -right-12 p-4 rounded-2xl bg-white shadow-xl shadow-slate-200/50 border border-slate-100 animate-[slideUp_4s_ease-in-out_infinite_alternate] hidden md:block">
+              <div className="absolute top-20 -right-8 p-4 rounded-2xl bg-white shadow-xl shadow-slate-200/50 border border-slate-100 animate-floating-card md:block z-10">
                 <Activity className="w-6 h-6 text-orange-500 mb-2" />
                 <div className="text-xs font-semibold text-slate-900">Live Detection</div>
                 <div className="text-[10px] text-slate-500">Active Monitoring</div>
               </div>
 
-              <div className="absolute bottom-40 -left-12 p-4 rounded-2xl bg-white shadow-xl shadow-slate-200/50 border border-slate-100 animate-[slideUp_5s_ease-in-out_infinite_alternate-reverse] hidden md:block">
+              <div className="absolute bottom-40 -left-12 p-4 rounded-2xl bg-white shadow-xl shadow-slate-200/50 border border-slate-100 animate-floating-card-delayed md:block z-10">
                 <ShieldCheck className="w-6 h-6 text-medical-primary mb-2" />
-                <div className="text-xs font-semibold text-slate-900">Bank-Grade</div>
+                <div className="text-xs font-semibold text-slate-900">Enterprise-Grade</div>
                 <div className="text-[10px] text-slate-500">AES-256 Encrypted</div>
               </div>
             </div>
@@ -258,7 +312,7 @@ const HomePage = () => {
               {
                 icon: <Lock className="w-6 h-6 text-medical-primary" />,
                 title: 'Privacy First',
-                desc: 'Zero-knowledge architecture. Biometric templates are encrypted and never leave our secure enclave.',
+                desc: 'Encrypted Biometric Storage. Templates are securely stored with role-based access control.',
               },
               {
                 icon: <Database className="w-6 h-6 text-purple-500" />,
@@ -278,7 +332,7 @@ const HomePage = () => {
               {
                 icon: <ShieldCheck className="w-6 h-6 text-green-500" />,
                 title: 'Fraud Prevention',
-                desc: 'Advanced liveness detection prevents spoofing attacks using photos or videos.',
+                desc: 'Intelligent Quality Assurance checks image integrity to prevent basic spoofing attempts.',
               },
             ].map((feature, i) => (
               <div

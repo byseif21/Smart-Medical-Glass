@@ -132,3 +132,49 @@
     animation: scan 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   }
 }
+
+/* Custom Animations - Global Scope */
+@keyframes float-card {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+.animate-floating-card {
+  animation: float-card 6s ease-in-out infinite;
+}
+
+.animate-floating-card-delayed {
+  animation: float-card 6s ease-in-out infinite;
+  animation-delay: 3s;
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+
+@keyframes progress-load {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 90%;
+  }
+}
+
+.animate-progress-load {
+  animation: progress-load 3s cubic-bezier(0.1, 0.4, 0.2, 1) forwards;
+}
