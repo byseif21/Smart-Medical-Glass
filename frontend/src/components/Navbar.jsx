@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Home, Shield, ScanFace, Settings, LogOut, LogIn, UserPlus, Menu, X } from 'lucide-react';
 import { getCurrentUser, clearSession, isAuthenticated } from '../services/auth';
 import { getProfile } from '../services/api';
 import ProfileAvatar from './ProfileAvatar';
@@ -76,48 +77,52 @@ const Navbar = () => {
             <div className="ml-10 flex items-center space-x-4">
               <Link
                 to="/"
-                className={`px-4 py-2 rounded-lg transition-all duration-300 ${
+                className={`px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 ${
                   isActive('/')
                     ? 'glow-border-pink text-white'
                     : 'text-gray-300 hover:text-white hover:glow-border-blue'
                 }`}
               >
+                <Home className="w-4 h-4" />
                 Home
               </Link>
 
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className={`px-4 py-2 rounded-lg transition-all duration-300 ${
+                  className={`px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 ${
                     isActive('/admin')
                       ? 'glow-border-pink text-white'
                       : 'text-gray-300 hover:text-white hover:glow-border-blue'
                   }`}
                 >
+                  <Shield className="w-4 h-4" />
                   Admin
                 </Link>
               )}
 
               <Link
                 to="/recognize"
-                className={`px-4 py-2 rounded-lg transition-all duration-300 ${
+                className={`px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 ${
                   isActive('/recognize')
                     ? 'glow-border-pink text-white'
                     : 'text-gray-300 hover:text-white hover:glow-border-blue'
                 }`}
               >
+                <ScanFace className="w-4 h-4" />
                 Recognize
               </Link>
 
               {user && (
                 <Link
                   to="/settings"
-                  className={`px-4 py-2 rounded-lg transition-all duration-300 ${
+                  className={`px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 ${
                     isActive('/settings')
                       ? 'glow-border-pink text-white'
                       : 'text-gray-300 hover:text-white hover:glow-border-blue'
                   }`}
                 >
+                  <Settings className="w-4 h-4" />
                   Settings
                 </Link>
               )}
@@ -137,7 +142,11 @@ const Navbar = () => {
                         {user.email}
                       </span>
                     </Link>
-                    <button onClick={handleSignOut} className="glass-button text-sm">
+                    <button
+                      onClick={handleSignOut}
+                      className="glass-button text-sm flex items-center gap-2"
+                    >
+                      <LogOut className="w-4 h-4" />
                       Sign Out
                     </button>
                   </>
@@ -145,11 +154,16 @@ const Navbar = () => {
                   <>
                     <Link
                       to="/register"
-                      className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                      className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2"
                     >
+                      <UserPlus className="w-4 h-4" />
                       Register
                     </Link>
-                    <button onClick={handleSignIn} className="neon-button text-sm">
+                    <button
+                      onClick={handleSignIn}
+                      className="neon-button text-sm flex items-center gap-2"
+                    >
+                      <LogIn className="w-4 h-4" />
                       Sign In
                     </button>
                   </>
@@ -165,23 +179,7 @@ const Navbar = () => {
               className="glass-button p-2"
               aria-label="Toggle menu"
             >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                {isMenuOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                )}
-              </svg>
+              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
         </div>
@@ -194,12 +192,13 @@ const Navbar = () => {
             <Link
               to="/"
               onClick={() => setIsMenuOpen(false)}
-              className={`block px-3 py-2 rounded-lg transition-all duration-300 ${
+              className={`block px-3 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 ${
                 isActive('/')
                   ? 'glow-border-pink text-white'
                   : 'text-gray-300 hover:text-white hover:bg-white/5'
               }`}
             >
+              <Home className="w-4 h-4" />
               Home
             </Link>
 
@@ -207,12 +206,13 @@ const Navbar = () => {
               <Link
                 to="/admin"
                 onClick={() => setIsMenuOpen(false)}
-                className={`block px-3 py-2 rounded-lg transition-all duration-300 ${
+                className={`block px-3 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 ${
                   isActive('/admin')
                     ? 'glow-border-pink text-white'
                     : 'text-gray-300 hover:text-white hover:bg-white/5'
                 }`}
               >
+                <Shield className="w-4 h-4" />
                 Admin
               </Link>
             )}
@@ -220,12 +220,13 @@ const Navbar = () => {
             <Link
               to="/recognize"
               onClick={() => setIsMenuOpen(false)}
-              className={`block px-3 py-2 rounded-lg transition-all duration-300 ${
+              className={`block px-3 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 ${
                 isActive('/recognize')
                   ? 'glow-border-pink text-white'
                   : 'text-gray-300 hover:text-white hover:bg-white/5'
               }`}
             >
+              <ScanFace className="w-4 h-4" />
               Recognize
             </Link>
 
@@ -233,12 +234,13 @@ const Navbar = () => {
               <Link
                 to="/settings"
                 onClick={() => setIsMenuOpen(false)}
-                className={`block px-3 py-2 rounded-lg transition-all duration-300 ${
+                className={`block px-3 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 ${
                   isActive('/settings')
                     ? 'glow-border-pink text-white'
                     : 'text-gray-300 hover:text-white hover:bg-white/5'
                 }`}
               >
+                <Settings className="w-4 h-4" />
                 Settings
               </Link>
             )}
@@ -264,8 +266,9 @@ const Navbar = () => {
                       handleSignOut();
                       setIsMenuOpen(false);
                     }}
-                    className="w-full text-left px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/5"
+                    className="w-full text-left px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/5 flex items-center gap-2"
                   >
+                    <LogOut className="w-4 h-4" />
                     Sign Out
                   </button>
                 </>
@@ -274,8 +277,9 @@ const Navbar = () => {
                   <Link
                     to="/register"
                     onClick={() => setIsMenuOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/5"
+                    className="block px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/5 flex items-center gap-2"
                   >
+                    <UserPlus className="w-4 h-4" />
                     Register
                   </Link>
                   <button
@@ -283,8 +287,9 @@ const Navbar = () => {
                       handleSignIn();
                       setIsMenuOpen(false);
                     }}
-                    className="w-full neon-button mt-2"
+                    className="w-full neon-button mt-2 flex items-center justify-center gap-2"
                   >
+                    <LogIn className="w-4 h-4" />
                     Sign In
                   </button>
                 </>

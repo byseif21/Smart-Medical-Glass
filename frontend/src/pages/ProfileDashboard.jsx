@@ -1,5 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
+import {
+  User,
+  Heart,
+  Users,
+  Copy,
+  Check,
+  ArrowLeft,
+  ScanFace,
+  Settings,
+  LogOut,
+  Shield,
+} from 'lucide-react';
 import { getCurrentUser, getUserRole, clearSession } from '../services/auth';
 import MainInfo from '../components/MainInfo';
 import MedicalInfo from '../components/MedicalInfo';
@@ -56,12 +68,12 @@ const ProfileDashboard = () => {
   }, [urlUserId]);
 
   const tabs = [
-    { id: 'main', label: 'Main Info', icon: 'user' },
-    ...(canViewMedical ? [{ id: 'medical', label: 'Medical Info', icon: 'heart' }] : []),
+    { id: 'main', label: 'Main Info', icon: User },
+    ...(canViewMedical ? [{ id: 'medical', label: 'Medical Info', icon: Heart }] : []),
     {
       id: 'connections',
       label: isViewingOther ? 'Emergency Contacts' : 'Connections',
-      icon: 'users',
+      icon: Users,
     },
   ];
 
@@ -113,23 +125,12 @@ const ProfileDashboard = () => {
                     </p>
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity w-16">
                       {idCopied ? (
-                        <span className="text-xs text-green-600 font-medium animate-fade-in block">
-                          Copied!
-                        </span>
+                        <div className="flex items-center gap-1 text-green-600 animate-fade-in">
+                          <Check className="w-3.5 h-3.5" />
+                          <span className="text-xs font-medium">Copied!</span>
+                        </div>
                       ) : (
-                        <svg
-                          className="w-3.5 h-3.5 text-medical-gray-400 group-hover:text-medical-primary block"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                          />
-                        </svg>
+                        <Copy className="w-3.5 h-3.5 text-medical-gray-400 group-hover:text-medical-primary block" />
                       )}
                     </div>
                   </div>
@@ -140,26 +141,43 @@ const ProfileDashboard = () => {
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className="btn-medical-secondary text-sm px-4 py-2 bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100"
+                  className="btn-medical-secondary text-sm px-4 py-2 bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100 flex items-center gap-2"
                 >
+                  <Shield className="w-4 h-4" />
                   Admin Panel
                 </Link>
               )}
               {isViewingOther && (
-                <a href="/dashboard" className="btn-medical-secondary text-sm px-4 py-2">
-                  ← My Profile
+                <a
+                  href="/dashboard"
+                  className="btn-medical-secondary text-sm px-4 py-2 flex items-center gap-2"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  My Profile
                 </a>
               )}
-              <Link to="/recognize" className="btn-medical-primary text-sm px-4 py-2">
+              <Link
+                to="/recognize"
+                className="btn-medical-primary text-sm px-4 py-2 flex items-center gap-2"
+              >
+                <ScanFace className="w-4 h-4" />
                 Recognize Face
               </Link>
               {!isViewingOther && (
-                <Link to="/settings" className="btn-medical-secondary text-sm px-4 py-2">
+                <Link
+                  to="/settings"
+                  className="btn-medical-secondary text-sm px-4 py-2 flex items-center gap-2"
+                >
+                  <Settings className="w-4 h-4" />
                   Settings
                 </Link>
               )}
               {!isViewingOther && (
-                <button onClick={handleLogout} className="btn-medical-secondary text-sm px-4 py-2">
+                <button
+                  onClick={handleLogout}
+                  className="btn-medical-secondary text-sm px-4 py-2 flex items-center gap-2"
+                >
+                  <LogOut className="w-4 h-4" />
                   Logout
                 </button>
               )}
@@ -176,12 +194,13 @@ const ProfileDashboard = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
+                className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
                   activeTab === tab.id
                     ? 'border-medical-primary text-medical-primary'
                     : 'border-transparent text-medical-gray-500 hover:text-medical-gray-700 hover:border-medical-gray-300'
                 }`}
               >
+                <tab.icon className="w-4 h-4" />
                 {tab.label}
               </button>
             ))}
