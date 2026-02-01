@@ -6,8 +6,7 @@ Run this to ensure all components are working correctly.
 import sys
 import os
 
-# Add backend to path
-sys.path.insert(0, os.path.dirname(__file__))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 print("Testing Face Recognition Service Implementation...")
 print("=" * 60)

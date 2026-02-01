@@ -6,8 +6,7 @@ import argparse
 from pathlib import Path
 from typing import List, Dict, Tuple
 
-# Add current directory to path
-sys.path.insert(0, os.path.dirname(__file__))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 def analyze_dataset(dataset_path: str):
     """

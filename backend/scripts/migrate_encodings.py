@@ -4,6 +4,11 @@ Run this once to sync existing users.
 """
 
 import json
+import sys
+import os
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from services.storage_service import get_supabase_service
 from services.face_service import get_face_service
 

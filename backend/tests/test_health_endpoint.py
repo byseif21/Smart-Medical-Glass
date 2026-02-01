@@ -6,7 +6,6 @@ This script verifies that the health check endpoint implementation is correct.
 import sys
 import os
 
-# Add backend to path
 sys.path.insert(0, os.path.dirname(__file__))
 
 print("Testing Health Check Endpoint Implementation...")
