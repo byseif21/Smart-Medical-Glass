@@ -33,21 +33,7 @@ class FaceRecognitionService:
     def __init__(self):
         """Initialize the face recognition service."""
         self.tolerance = config.FACE_RECOGNITION_TOLERANCE
-        self.encodings_file = Path(config.LOCAL_ENCODINGS_PATH)
-        self._lock = threading.Lock()  # For thread-safe file operations
-        
-        # Ensure data directory exists
-        self.encodings_file.parent.mkdir(parents=True, exist_ok=True)
-        
-        # Initialize encodings file if it doesn't exist
-        if not self.encodings_file.exists():
-            self._initialize_encodings_file()
-    
-    def _initialize_encodings_file(self) -> None:
-        """Initialize empty encodings file."""
-        initial_data = FaceEncodingStorage(encodings=[], last_updated=datetime.utcnow())
-        with open(self.encodings_file, 'w') as f:
-            json.dump(initial_data.model_dump(mode='json'), f, indent=2, default=str)
+        self._lock = threading.Lock()  # For thread-safe operations
 
     def validate_face_quality(self, image, face_location) -> Tuple[bool, str]:
         """
@@ -420,7 +406,7 @@ class FaceRecognitionService:
 
     def delete_encoding(self, user_id: str) -> bool:
         """
-        Delete encoding for a specific user.
+        Delete encoding for a specific user from Supabase.
         
         Args:
             user_id: User identifier
@@ -429,27 +415,15 @@ class FaceRecognitionService:
             True if deletion successful, False if user not found
         """
         try:
-            with self._lock:
-                storage = self._load_encodings_storage()
-                
-                # Filter out the user's encoding
-                original_count = len(storage.encodings)
-                storage.encodings = [
-                    enc for enc in storage.encodings
-                    if enc.user_id != user_id
-                ]
-                
-                # Check if anything was deleted
-                if len(storage.encodings) == original_count:
-                    return False
-                
-                # Update timestamp and save
-                storage.last_updated = datetime.utcnow()
-                
-                with open(self.encodings_file, 'w') as f:
-                    json.dump(storage.model_dump(mode='json'), f, indent=2, default=str)
-                
-                return True
+            from services.storage_service import get_supabase_service
+            supabase = get_supabase_service()
+            
+            # Set face_encoding to NULL
+            response = supabase.client.table('users').update({
+                'face_encoding': None
+            }).eq('id', user_id).execute()
+            
+            return True
                 
         except Exception as e:
             raise FaceRecognitionError(f"Failed to delete encoding: {str(e)}")

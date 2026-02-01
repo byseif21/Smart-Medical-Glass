@@ -4,7 +4,20 @@ import { getAccessToken, getCurrentUser, clearSession } from './auth';
 const rawApiUrl = import.meta.env.VITE_API_URL;
 let API_ORIGIN;
 if (rawApiUrl && rawApiUrl.trim() !== '') {
-  API_ORIGIN = /^https?:\/\//i.test(rawApiUrl) ? rawApiUrl : `https://${rawApiUrl}`;
+  // Always enforce HTTPS in production/remote environments unless it's explicitly localhost
+  const isLocalhost = rawApiUrl.includes('localhost') || rawApiUrl.includes('127.0.0.1');
+  let url = rawApiUrl;
+
+  if (!/^https?:\/\//i.test(url)) {
+    url = `https://${url}`;
+  }
+
+  // Upgrade http to https if not localhost
+  if (!isLocalhost && url.startsWith('http://')) {
+    url = url.replace('http://', 'https://');
+  }
+
+  API_ORIGIN = url;
 } else {
   API_ORIGIN = import.meta.env.DEV ? 'http://localhost:8000' : window.location.origin;
 }
