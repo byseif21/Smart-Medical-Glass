@@ -1,4 +1,3 @@
-# Use an official Python runtime as a parent image
 FROM python:3.10-slim
 
 # Install system dependencies required for dlib and opencv
@@ -8,7 +7,10 @@ RUN apt-get update && apt-get install -y \
     libopenblas-dev \
     liblapack-dev \
     libx11-6 \
-    libgl1-mesa-glx \
+    libgl1 \
+    libxext6 \
+    libsm6 \
+    libxrender1 \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
