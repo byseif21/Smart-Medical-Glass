@@ -66,6 +66,7 @@ async def root():
     return {"message": "Smart Glass AI API is running"}
 
 @app.get("/api/health")
+@app.head("/api/health")
 async def health_check():
     """
     Health check endpoint that verifies the status of all system services.
