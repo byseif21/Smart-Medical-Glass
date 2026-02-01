@@ -1,10 +1,4 @@
 from fastapi import APIRouter, HTTPException, Depends, File, UploadFile
-from pydantic import BaseModel, Field, field_validator
-try:
-    import email_validator  # noqa: F401
-    from pydantic import EmailStr as EmailType
-except Exception:
-    EmailType = str
 from typing import Optional, Dict, Any
 import jwt
 from datetime import datetime, timedelta
@@ -15,33 +9,15 @@ from services.security import verify_password, hash_password
 from utils.config import get_config
 from dependencies import get_current_user, security
 from utils.validation import normalize_email
+from models.auth import (
+    LoginRequest, 
+    LoginResponse, 
+    FaceLoginConfirmRequest, 
+    ChangePasswordRequest
+)
 
 router = APIRouter(prefix="/api", tags=["authentication"])
 settings = get_config()
-
-class LoginRequest(BaseModel):
-    email: EmailType
-    password: str
-
-    @field_validator('email')
-    def validate_email_field(cls, v):
-        return normalize_email(v)
-
-class LoginResponse(BaseModel):
-    user_id: str
-    name: str
-    email: str
-    role: str
-    token: str
-    message: str
-
-class FaceLoginConfirmRequest(BaseModel):
-    user_id: str
-    password: str
-
-class ChangePasswordRequest(BaseModel):
-    current_password: str
-    new_password: str = Field(..., min_length=6)
 
 def create_access_token(data: dict):
     """Create JWT access token"""
