@@ -6,7 +6,6 @@ try:
 except Exception:
     EmailType = str
 from typing import Optional, Dict, Any
-import bcrypt
 import jwt
 from datetime import datetime, timedelta
 from services.storage_service import get_supabase_service
@@ -51,16 +50,6 @@ def create_access_token(data: dict):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify password against hash"""
-    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
-
-def hash_password(password: str) -> str:
-    """Hash password using bcrypt"""
-    salt = bcrypt.gensalt()
-    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
-    return hashed.decode('utf-8')
 
 @router.post("/login", response_model=LoginResponse)
 async def login(credentials: LoginRequest):
