@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { updateMainInfo } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
-import { profileUpdateSchema, validateWithSchema } from '../utils/validation';
+import { profileUpdateSchema } from '../utils/validation';
+import { useForm } from './useForm';
 
 const INITIAL_FORM_STATE = {
   name: '',
@@ -28,41 +29,15 @@ const getFormDataFromProfile = (profileData) => {
 };
 
 export const useProfileForm = (profile, targetUserId, onUpdate) => {
-  const [formData, setFormData] = useState(INITIAL_FORM_STATE);
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const { user } = useAuth();
 
-  useEffect(() => {
-    setFormData(getFormDataFromProfile(profile));
-    setErrors({});
-  }, [profile]);
+  const initialValues = useMemo(() => getFormDataFromProfile(profile), [profile]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  const handleSave = async () => {
-    const {
-      isValid,
-      errors: validationErrors,
-      data: sanitizedData,
-    } = validateWithSchema(profileUpdateSchema, formData);
-
-    if (!isValid) {
-      setErrors(validationErrors);
-      return;
-    }
-
-    setLoading(true);
-    const userId = targetUserId || user?.id;
-    try {
-      const result = await updateMainInfo(userId, sanitizedData);
+  const handleFormSubmit = useCallback(
+    async (data) => {
+      const userId = targetUserId || user?.id;
+      const result = await updateMainInfo(userId, data);
 
       if (result.success) {
         setIsEditing(false);
@@ -70,19 +45,33 @@ export const useProfileForm = (profile, targetUserId, onUpdate) => {
       } else {
         // TODO: replace alert with GeneralModal (unified app modal) for error feedback
         alert('Failed to update: ' + result.error);
+        // We throw to let useForm know it failed, although we already alerted.
+        throw new Error(result.error);
       }
-    } catch (err) {
-      console.error('Update error:', err);
-      alert('An unexpected error occurred.');
-    } finally {
-      setLoading(false);
-    }
+    },
+    [targetUserId, user, onUpdate]
+  );
+
+  const {
+    formData,
+    errors,
+    isSubmitting: loading,
+    handleChange,
+    handleSubmit,
+    reset,
+  } = useForm({
+    initialValues,
+    schema: profileUpdateSchema,
+    onSubmit: handleFormSubmit,
+  });
+
+  const handleSave = async () => {
+    await handleSubmit();
   };
 
   const handleCancel = () => {
-    setFormData(getFormDataFromProfile(profile));
+    reset();
     setIsEditing(false);
-    setErrors({});
   };
 
   return {
