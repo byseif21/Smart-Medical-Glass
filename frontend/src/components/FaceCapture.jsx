@@ -11,7 +11,7 @@ const overlayStyles = {
   },
   lg: {
     overlay: 'w-48 h-64 sm:w-56 sm:h-72 md:w-64 md:h-80',
-    container: 'aspect-video',
+    container: 'aspect-[3/4] sm:aspect-video',
     text: 'mt-6 text-sm',
   },
 };

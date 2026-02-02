@@ -88,7 +88,7 @@ const MultiFaceCapture = ({ onComplete }) => {
       </div>
 
       {/* Camera View */}
-      <div className="relative bg-medical-gray-100 rounded-lg overflow-hidden aspect-video">
+      <div className="relative bg-medical-gray-100 rounded-lg overflow-hidden aspect-[3/4] sm:aspect-video">
         <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
 
         {/* Face guide overlay */}
