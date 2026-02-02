@@ -1,7 +1,6 @@
-import { useState } from 'react';
 import PropTypes from 'prop-types';
 import RelationshipSelector from './RelationshipSelector';
-import { externalContactSchema, validateWithSchema } from '../utils/validation';
+import { useExternalContactForm } from '../hooks/useExternalContactForm';
 
 const ExternalContactForm = ({
   onSubmit,
@@ -10,106 +9,13 @@ const ExternalContactForm = ({
   isEditMode = false,
   isSubmitting: externalIsSubmitting = false,
 }) => {
-  const [formData, setFormData] = useState({
-    name: initialData?.name || '',
-    phone: initialData?.phone || '',
-    address: initialData?.address || '',
-    relationship: initialData?.relationship || '',
-  });
-
-  const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Update form when initialData changes
-  useState(() => {
-    if (initialData) {
-      setFormData({
-        name: initialData.name || '',
-        phone: initialData.phone || '',
-        address: initialData.address || '',
-        relationship: initialData.relationship || '',
-      });
-    }
-  }, [initialData]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    // Clear error for this field when user starts typing
-    if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: '',
-      }));
-    }
-  };
-
-  const handleRelationshipChange = (value) => {
-    setFormData((prev) => ({
-      ...prev,
-      relationship: value,
-    }));
-
-    if (errors.relationship) {
-      setErrors((prev) => ({
-        ...prev,
-        relationship: '',
-      }));
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // Prevent duplicate submissions
-    if (isSubmitting || externalIsSubmitting) {
-      return;
-    }
-
-    const {
-      isValid,
-      errors: validationErrors,
-      data: sanitizedData,
-    } = validateWithSchema(externalContactSchema, formData);
-
-    if (!isValid) {
-      setErrors(validationErrors);
-      return;
-    }
-
-    setIsSubmitting(true);
-    setErrors({}); // Clear previous errors
-
-    try {
-      await onSubmit(sanitizedData);
-      // Reset form on success only if not in edit mode
-      if (!isEditMode) {
-        setFormData({
-          name: '',
-          phone: '',
-          address: '',
-          relationship: '',
-        });
-        setErrors({});
-      }
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      // Check if it's a network error
-      if (error.message && error.message.includes('network')) {
-        setErrors({ submit: 'Network error. Please check your connection and try again.' });
-      } else {
-        setErrors({ submit: error.message || 'Failed to save contact. Please try again.' });
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const submitting = isSubmitting || externalIsSubmitting;
+  const { formData, errors, handleChange, handleRelationshipChange, handleSubmit, submitting } =
+    useExternalContactForm({
+      initialData,
+      onSubmit,
+      isEditMode,
+      externalIsSubmitting,
+    });
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
