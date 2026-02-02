@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { profileUpdateSchema } from '../utils/validation';
 import { useForm } from './useForm';
 
-const INITIAL_FORM_STATE = {
+const initialFormState = {
   name: '',
   phone: '',
   date_of_birth: '',
@@ -14,7 +14,7 @@ const INITIAL_FORM_STATE = {
 };
 
 const getFormDataFromProfile = (profileData) => {
-  if (!profileData) return INITIAL_FORM_STATE;
+  if (!profileData) return initialFormState;
 
   const { name, phone, date_of_birth, nationality, gender, id_number } = profileData;
 
