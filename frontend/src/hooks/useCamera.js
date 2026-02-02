@@ -1,6 +1,42 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 
 /**
+ * Stops all tracks in a media stream.
+ * @param {MediaStream} stream - The media stream to stop.
+ */
+const stopMediaStream = (stream) => {
+  if (stream) {
+    stream.getTracks().forEach((track) => track.stop());
+  }
+};
+
+/**
+ * Captures a frame from a video element and returns it as a File.
+ * @param {HTMLVideoElement} video - The video element to capture from.
+ * @param {string} fileName - The name of the file to create.
+ * @returns {Promise<File>} A promise that resolves with the captured image file.
+ */
+const captureVideoFrame = (video, fileName) => {
+  return new Promise((resolve, reject) => {
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      return reject(new Error('Video stream not ready'));
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext('2d');
+
+    context.drawImage(video, 0, 0);
+
+    canvas.toBlob((blob) => {
+      if (!blob) return reject(new Error('Failed to create image blob'));
+      resolve(new File([blob], fileName, { type: 'image/jpeg' }));
+    }, 'image/jpeg');
+  });
+};
+
+/**
  * Custom hook to handle camera operations
  * @returns {Object} Camera controls and state
  */
@@ -11,10 +47,7 @@ export const useCamera = () => {
 
   const startCamera = useCallback(async () => {
     try {
-      // Stop existing stream if any
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
-      }
+      stopMediaStream(stream);
 
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user', width: 640, height: 480 },
@@ -33,7 +66,7 @@ export const useCamera = () => {
 
   const stopCamera = useCallback(() => {
     if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
+      stopMediaStream(stream);
       setStream(null);
       if (videoRef.current) {
         videoRef.current.srcObject = null;
@@ -42,56 +75,15 @@ export const useCamera = () => {
   }, [stream]);
 
   const captureImage = useCallback((fileName = 'captured-face.jpg') => {
-    return new Promise((resolve, reject) => {
-      if (!videoRef.current) {
-        reject(new Error('Video ref is not attached or camera not started'));
-        return;
-      }
-
-      const video = videoRef.current;
-
-      // Check if video is actually playing and has dimensions
-      if (video.videoWidth === 0 || video.videoHeight === 0) {
-        reject(new Error('Video stream not ready'));
-        return;
-      }
-
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const context = canvas.getContext('2d');
-
-      // Standard getUserMedia capture is not mirrored by default.
-      // We capture the raw frame exactly as the camera sees it.
-      context.drawImage(video, 0, 0);
-
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const file = new File([blob], fileName, { type: 'image/jpeg' });
-          resolve(file);
-        } else {
-          reject(new Error('Failed to create image blob'));
-        }
-      }, 'image/jpeg');
-    });
+    const video = videoRef.current;
+    if (!video) {
+      return Promise.reject(new Error('Video ref is not attached or camera not started'));
+    }
+    return captureVideoFrame(video, fileName);
   }, []);
 
-  // Cleanup on unmount (only needed once)
-  // Note: The second useEffect below handles stream cleanup when 'stream' changes.
-  // This empty-dependency effect is kept if we add other mount/unmount logic later.
   useEffect(() => {
-    return () => {
-      // Cleanup logic is handled by the effect below
-    };
-  }, []);
-
-  // Better cleanup:
-  useEffect(() => {
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
-      }
-    };
+    return () => stopMediaStream(stream);
   }, [stream]);
 
   return {
