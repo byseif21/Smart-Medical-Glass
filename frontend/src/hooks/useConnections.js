@@ -181,7 +181,7 @@ export const useConnections = (targetUserId) => {
         fetchConnections,
         fetchPendingRequests,
       }),
-    [fetchConnections, fetchPendingRequests]
+    [setError, setSuccessMessage, fetchConnections, fetchPendingRequests]
   );
 
   return {
