@@ -1,15 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../hooks/useAuth';
-import {
-  getConnections,
-  createLinkedConnection,
-  createExternalContact,
-  updateConnection,
-  deleteConnection,
-  getPendingRequests,
-  acceptConnectionRequest,
-  rejectConnectionRequest,
-} from '../services/api';
+import { useState } from 'react';
+import PropTypes from 'prop-types';
+import { useConnections } from '../hooks/useConnections';
 import ConnectionCard from './ConnectionCard';
 import AddConnectionModal from './AddConnectionModal';
 import LoadingSpinner from './LoadingSpinner';
@@ -23,131 +14,193 @@ import {
   Users,
 } from 'lucide-react';
 
+const PendingRequestsList = ({ requests, onAccept, onReject }) => {
+  if (requests.length === 0) return null;
+
+  return (
+    <div className="mb-8 p-4 bg-medical-light/30 border border-medical-primary/20 rounded-xl">
+      <h3 className="text-lg font-semibold text-medical-dark mb-4 flex items-center gap-2">
+        <Clock className="w-5 h-5 text-medical-primary" />
+        Pending Connection Requests ({requests.length})
+      </h3>
+      <div className="space-y-3">
+        {requests.map((request) => (
+          <div
+            key={request.id}
+            className="flex items-center justify-between p-3 bg-white border border-medical-gray-200 rounded-lg shadow-sm"
+          >
+            <div>
+              <p className="font-medium text-medical-dark">{request.sender_name}</p>
+              <p className="text-xs text-medical-gray-500">{request.sender_email}</p>
+              <p className="text-sm text-medical-primary font-medium mt-1">
+                Wants to connect as: {request.relationship}
+              </p>
+            </div>
+            <div className="flex gap-2 flex-shrink-0">
+              <button
+                onClick={() => onAccept(request.id)}
+                className="px-3 py-1.5 bg-medical-primary text-white text-sm font-medium rounded-md hover:bg-medical-primary-dark transition-colors"
+              >
+                Accept
+              </button>
+              <button
+                onClick={() => onReject(request.id)}
+                className="px-3 py-1.5 bg-medical-gray-100 text-medical-gray-700 text-sm font-medium rounded-md hover:bg-medical-gray-200 transition-colors"
+              >
+                Decline
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+PendingRequestsList.propTypes = {
+  requests: PropTypes.array.isRequired,
+  onAccept: PropTypes.func.isRequired,
+  onReject: PropTypes.func.isRequired,
+};
+
+const ConnectionsSection = ({ title, icon: Icon, connections, type, onEdit, onRemove }) => {
+  if (connections.length === 0) return null;
+
+  return (
+    <div className="mb-8">
+      <h3 className="text-lg font-semibold text-medical-dark mb-4 flex items-center gap-2">
+        <Icon
+          className={`w-5 h-5 ${type === 'linked' ? 'text-medical-primary' : 'text-medical-gray-600'}`}
+        />
+        {title} ({connections.length})
+      </h3>
+      <div className="grid md:grid-cols-2 gap-4">
+        {connections.map((connection) => (
+          <ConnectionCard
+            key={connection.id}
+            connection={connection}
+            type={type}
+            onEdit={onEdit}
+            onRemove={onRemove}
+            showActions={true}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+ConnectionsSection.propTypes = {
+  title: PropTypes.string.isRequired,
+  icon: PropTypes.elementType.isRequired,
+  connections: PropTypes.array.isRequired,
+  type: PropTypes.string.isRequired,
+  onEdit: PropTypes.func.isRequired,
+  onRemove: PropTypes.func.isRequired,
+};
+
+const EmptyState = ({ onAdd }) => (
+  <div className="text-center py-12 text-medical-gray-500">
+    <Users className="w-16 h-16 mx-auto mb-4 text-medical-gray-300" />
+    <p className="mb-4">No connections added yet</p>
+    <button onClick={onAdd} className="btn-medical-primary px-6 py-2">
+      Add Your First Connection
+    </button>
+  </div>
+);
+
+EmptyState.propTypes = {
+  onAdd: PropTypes.func.isRequired,
+};
+
+const RemoveConfirmationModal = ({ isOpen, target, isBusy, onConfirm, onCancel }) => {
+  if (!isOpen || !target) return null;
+
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !isBusy) {
+          onCancel();
+        }
+      }}
+    >
+      <div className="bg-white rounded-lg shadow-medical-lg w-full max-w-md overflow-hidden animate-slide-down">
+        <div className="p-6 border-b border-medical-gray-200">
+          <h3 className="text-xl font-semibold text-medical-dark">Remove Connection</h3>
+          <p className="text-sm text-medical-gray-600 mt-2">
+            Are you sure you want to remove{' '}
+            <span className="font-medium text-medical-dark">
+              {target.name || target.connected_user?.name}
+            </span>
+            ? This action cannot be undone.
+          </p>
+        </div>
+        <div className="flex justify-end gap-3 p-4">
+          <button
+            onClick={onCancel}
+            disabled={isBusy}
+            className="btn-medical-secondary px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isBusy}
+            className="btn-medical-primary px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isBusy ? 'Removing...' : 'Remove'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+RemoveConfirmationModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  target: PropTypes.object,
+  isBusy: PropTypes.bool.isRequired,
+  onConfirm: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired,
+};
+
 const Connections = ({ targetUserId }) => {
-  const [loading, setLoading] = useState(false);
-  const [linkedConnections, setLinkedConnections] = useState([]);
-  const [externalContacts, setExternalContacts] = useState([]);
-  const [pendingRequests, setPendingRequests] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingContact, setEditingContact] = useState(null);
-  const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
-  const { user } = useAuth();
-  const userId = targetUserId || user?.id;
 
-  // Fetch connections on mount
-  useEffect(() => {
-    fetchConnections();
-    fetchPendingRequests();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const {
+    loading,
+    linkedConnections,
+    externalContacts,
+    pendingRequests,
+    error,
+    successMessage,
+    userId,
+    handleAcceptRequest,
+    handleRejectRequest,
+    addConnection,
+    updateContact,
+    removeConnection,
+    allConnectionsCount,
+  } = useConnections(targetUserId);
 
-  const fetchConnections = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const result = await getConnections(userId);
-
-      if (result.success) {
-        setLinkedConnections(result.data.linked_connections || []);
-        setExternalContacts(result.data.external_contacts || []);
-      } else {
-        setError(result.error || 'Failed to load connections. Please try again.');
-      }
-    } catch (err) {
-      console.error('Error fetching connections:', err);
-      setError('An unexpected error occurred while loading connections. Please refresh the page.');
-    } finally {
-      setLoading(false);
+  const handleAddSubmit = async (data) => {
+    const success = await addConnection(data);
+    if (success) {
+      setShowAddModal(false);
+      setEditingContact(null);
     }
   };
 
-  const fetchPendingRequests = async () => {
-    try {
-      const result = await getPendingRequests();
-      if (result.success) {
-        setPendingRequests(result.data || []);
-      }
-    } catch (err) {
-      console.error('Error fetching pending requests:', err);
-    }
-  };
-
-  const processConnectionRequest = async (
-    requestId,
-    apiFunc,
-    errorMsg,
-    refreshConnections = false
-  ) => {
-    try {
-      const result = await apiFunc(requestId);
-      if (result.success) {
-        // TODO: integrate with global notification box instead of local successMessage
-        if (refreshConnections) {
-          await fetchConnections();
-        }
-        await fetchPendingRequests();
-      } else {
-        setError(result.error || errorMsg);
-      }
-    } catch (err) {
-      console.error(errorMsg, err);
-      setError(errorMsg);
-    }
-  };
-
-  const handleAcceptRequest = (requestId) =>
-    processConnectionRequest(requestId, acceptConnectionRequest, 'Failed to accept request', true);
-
-  const handleRejectRequest = (requestId) =>
-    processConnectionRequest(requestId, rejectConnectionRequest, 'Failed to reject request');
-
-  const handleAddConnection = async (connectionData) => {
-    setError(null);
-
-    try {
-      let result;
-
-      if (connectionData.type === 'linked') {
-        result = await createLinkedConnection({
-          connected_user_id: connectionData.connected_user_id,
-          relationship: connectionData.relationship,
-        });
-      } else {
-        result = await createExternalContact({
-          name: connectionData.name,
-          phone: connectionData.phone,
-          address: connectionData.address,
-          relationship: connectionData.relationship,
-        });
-      }
-
-      if (result.success) {
-        const message =
-          connectionData.type === 'linked'
-            ? 'Connection request sent successfully! Waiting for approval.'
-            : 'Contact added successfully!';
-
-        setSuccessMessage(message);
-        setShowAddModal(false);
-        setEditingContact(null);
-        await fetchConnections();
-
-        // Clear success message after 3 seconds
-        setTimeout(() => setSuccessMessage(null), 5000);
-      } else {
-        setError(result.error || 'Failed to add connection. Please try again.');
-        throw new Error(result.error);
-      }
-    } catch (err) {
-      console.error('Error adding connection:', err);
-      if (!error) {
-        setError('An unexpected error occurred. Please check your connection and try again.');
-      }
+  const handleUpdateSubmit = async (contactId, updatedData, connectionType) => {
+    const success = await updateContact(contactId, updatedData, connectionType);
+    if (success) {
+      setShowAddModal(false);
+      setEditingContact(null);
     }
   };
 
@@ -156,76 +209,21 @@ const Connections = ({ targetUserId }) => {
     setShowAddModal(true);
   };
 
-  const handleUpdateContact = async (contactId, updatedData, connectionType) => {
-    setError(null);
-
-    try {
-      const result = await updateConnection(contactId, updatedData, connectionType);
-
-      if (result.success) {
-        setSuccessMessage('Connection updated successfully!');
-        setEditingContact(null);
-        setShowAddModal(false);
-        await fetchConnections();
-
-        setTimeout(() => setSuccessMessage(null), 3000);
-      } else {
-        if (result.status === 404) {
-          setSuccessMessage('This connection no longer exists. It may have been removed.');
-          setEditingContact(null);
-          setShowAddModal(false);
-          await fetchConnections();
-          setTimeout(() => setSuccessMessage(null), 4000);
-        } else {
-          setError(result.error || 'Failed to update connection. Please try again.');
-          throw new Error(result.error);
-        }
-      }
-    } catch (err) {
-      console.error('Error updating connection:', err);
-      if (!error) {
-        setError('An unexpected error occurred. Please check your connection and try again.');
-      }
-    }
-  };
-
-  // TODO: unify in GeneralModal (consistent UX)
-  const handleRemoveConnection = (connection) => {
+  const handleRemoveClick = (connection) => {
     setConfirmTarget(connection);
     setConfirmOpen(true);
   };
 
-  const confirmRemoveConnection = async () => {
+  const handleConfirmRemove = async () => {
     if (!confirmTarget || confirmBusy) return;
     setConfirmBusy(true);
-    setError(null);
-
-    try {
-      const result = await deleteConnection(confirmTarget.id);
-
-      if (result.success) {
-        setSuccessMessage(
-          'Connection removed successfully! Any pending requests have also been cleared.'
-        );
-        await fetchConnections();
-        setConfirmOpen(false);
-        setConfirmTarget(null);
-        setTimeout(() => setSuccessMessage(null), 5000);
-      } else {
-        setError(result.error || 'Failed to remove connection. Please try again.');
-        throw new Error(result.error);
-      }
-    } catch (err) {
-      console.error('Error removing connection:', err);
-      if (!error) {
-        setError('An unexpected error occurred. Please check your connection and try again.');
-      }
-    } finally {
-      setConfirmBusy(false);
+    const success = await removeConnection(confirmTarget.id);
+    setConfirmBusy(false);
+    if (success) {
+      setConfirmOpen(false);
+      setConfirmTarget(null);
     }
   };
-
-  const allConnectionsCount = linkedConnections.length + externalContacts.length;
 
   if (loading && allConnectionsCount === 0) {
     return (
@@ -265,159 +263,57 @@ const Connections = ({ targetUserId }) => {
         </div>
       )}
 
-      {/* Pending Requests Section */}
-      {pendingRequests.length > 0 && (
-        <div className="mb-8 p-4 bg-medical-light/30 border border-medical-primary/20 rounded-xl">
-          <h3 className="text-lg font-semibold text-medical-dark mb-4 flex items-center gap-2">
-            <Clock className="w-5 h-5 text-medical-primary" />
-            Pending Connection Requests ({pendingRequests.length})
-          </h3>
-          <div className="space-y-3">
-            {pendingRequests.map((request) => (
-              <div
-                key={request.id}
-                className="flex items-center justify-between p-3 bg-white border border-medical-gray-200 rounded-lg shadow-sm"
-              >
-                <div>
-                  <p className="font-medium text-medical-dark">{request.sender_name}</p>
-                  <p className="text-xs text-medical-gray-500">{request.sender_email}</p>
-                  <p className="text-sm text-medical-primary font-medium mt-1">
-                    Wants to connect as: {request.relationship}
-                  </p>
-                </div>
-                <div className="flex gap-2 flex-shrink-0">
-                  <button
-                    onClick={() => handleAcceptRequest(request.id)}
-                    className="px-3 py-1.5 bg-medical-primary text-white text-sm font-medium rounded-md hover:bg-medical-primary-dark transition-colors"
-                  >
-                    Accept
-                  </button>
-                  <button
-                    onClick={() => handleRejectRequest(request.id)}
-                    className="px-3 py-1.5 bg-medical-gray-100 text-medical-gray-700 text-sm font-medium rounded-md hover:bg-medical-gray-200 transition-colors"
-                  >
-                    Decline
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <PendingRequestsList
+        requests={pendingRequests}
+        onAccept={handleAcceptRequest}
+        onReject={handleRejectRequest}
+      />
 
-      {/* Linked Connections Section */}
-      {linkedConnections.length > 0 && (
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold text-medical-dark mb-4 flex items-center gap-2">
-            <LinkIcon className="w-5 h-5 text-medical-primary" />
-            Linked Connections ({linkedConnections.length})
-          </h3>
-          <div className="grid md:grid-cols-2 gap-4">
-            {linkedConnections.map((connection) => (
-              <ConnectionCard
-                key={connection.id}
-                connection={connection}
-                type="linked"
-                onEdit={handleEditContact}
-                onRemove={handleRemoveConnection}
-                showActions={true}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      <ConnectionsSection
+        title="Linked Connections"
+        icon={LinkIcon}
+        connections={linkedConnections}
+        type="linked"
+        onEdit={handleEditContact}
+        onRemove={handleRemoveClick}
+      />
 
-      {/* External Contacts Section */}
-      {externalContacts.length > 0 && (
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold text-medical-dark mb-4 flex items-center gap-2">
-            <Globe className="w-5 h-5 text-medical-gray-600" />
-            External Contacts ({externalContacts.length})
-          </h3>
-          <div className="grid md:grid-cols-2 gap-4">
-            {externalContacts.map((contact) => (
-              <ConnectionCard
-                key={contact.id}
-                connection={contact}
-                type="external"
-                onEdit={handleEditContact}
-                onRemove={handleRemoveConnection}
-                showActions={true}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      <ConnectionsSection
+        title="External Contacts"
+        icon={Globe}
+        connections={externalContacts}
+        type="external"
+        onEdit={handleEditContact}
+        onRemove={handleRemoveClick}
+      />
 
-      {/* Empty State */}
-      {allConnectionsCount === 0 && !loading && (
-        <div className="text-center py-12 text-medical-gray-500">
-          <Users className="w-16 h-16 mx-auto mb-4 text-medical-gray-300" />
-          <p className="mb-4">No connections added yet</p>
-          <button onClick={() => setShowAddModal(true)} className="btn-medical-primary px-6 py-2">
-            Add Your First Connection
-          </button>
-        </div>
-      )}
+      {allConnectionsCount === 0 && !loading && <EmptyState onAdd={() => setShowAddModal(true)} />}
 
-      {/* Add/Edit Connection Modal */}
       <AddConnectionModal
         isOpen={showAddModal}
         onClose={() => {
           setShowAddModal(false);
           setEditingContact(null);
         }}
-        onAddConnection={handleAddConnection}
-        onUpdateConnection={handleUpdateContact}
+        onAddConnection={handleAddSubmit}
+        onUpdateConnection={handleUpdateSubmit}
         editingContact={editingContact}
         currentUserId={userId}
         existingConnections={linkedConnections.map((c) => c.connected_user?.id).filter(Boolean)}
       />
-      {confirmOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget && !confirmBusy) {
-              setConfirmOpen(false);
-              setConfirmTarget(null);
-            }
-          }}
-        >
-          <div className="bg-white rounded-lg shadow-medical-lg w-full max-w-md overflow-hidden animate-slide-down">
-            <div className="p-6 border-b border-medical-gray-200">
-              <h3 className="text-xl font-semibold text-medical-dark">Remove Connection</h3>
-              <p className="text-sm text-medical-gray-600 mt-2">
-                Are you sure you want to remove{' '}
-                <span className="font-medium text-medical-dark">
-                  {confirmTarget?.name || confirmTarget?.connected_user?.name}
-                </span>
-                ? This action cannot be undone.
-              </p>
-            </div>
-            <div className="flex justify-end gap-3 p-4">
-              <button
-                onClick={() => {
-                  if (!confirmBusy) {
-                    setConfirmOpen(false);
-                    setConfirmTarget(null);
-                  }
-                }}
-                disabled={confirmBusy}
-                className="btn-medical-secondary px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmRemoveConnection}
-                disabled={confirmBusy}
-                className="btn-medical-primary px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {confirmBusy ? 'Removing...' : 'Remove'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
+      <RemoveConfirmationModal
+        isOpen={confirmOpen}
+        target={confirmTarget}
+        isBusy={confirmBusy}
+        onConfirm={handleConfirmRemove}
+        onCancel={() => {
+          if (!confirmBusy) {
+            setConfirmOpen(false);
+            setConfirmTarget(null);
+          }
+        }}
+      />
     </div>
   );
 };
