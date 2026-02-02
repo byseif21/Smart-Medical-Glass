@@ -12,7 +12,7 @@ const executeSubmit = async (onSubmit, data, setErrors) => {
     return true;
   } catch (err) {
     console.error('Form submission error:', err);
-    setErrors({ submit: err.message || 'Operation failed' });
+    setErrors({ submit: err.message || 'Failed to submit form. Please try again.' });
     return false;
   }
 };

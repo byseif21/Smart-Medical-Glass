@@ -26,7 +26,7 @@ export const useUserSearch = (currentUserId) => {
         if (result.success) {
           setSearchResults(result.data.users || []);
         } else {
-          setError(result.error || 'Search failed. Please try again.');
+          setError(result.error || 'Unable to search users. Please try again.');
           setSearchResults([]);
         }
       } catch (err) {
