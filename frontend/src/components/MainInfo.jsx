@@ -1,73 +1,21 @@
-import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import { updateMainInfo } from '../services/api';
-import { useAuth } from '../hooks/useAuth';
-import { countries } from '../utils/countries';
 import LoadingSpinner from './LoadingSpinner';
-import { computeAge } from '../utils/dateUtils';
-import { profileUpdateSchema, validateWithSchema } from '../utils/validation';
-
-const getFormDataFromProfile = (profile) => ({
-  name: profile?.name || '',
-  phone: profile?.phone || '',
-  date_of_birth: profile?.date_of_birth || '',
-  nationality: profile?.nationality || '',
-  gender: profile?.gender || '',
-  id_number: profile?.id_number || '',
-});
+import MainInfoForm from './MainInfoForm';
+import { useProfileForm } from '../hooks/useProfileForm';
 
 const MainInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null }) => {
-  const [isEditing, setIsEditing] = useState(false);
+  const {
+    formData,
+    errors,
+    loading,
+    isEditing,
+    setIsEditing,
+    handleChange,
+    handleSave,
+    handleCancel,
+  } = useProfileForm(profile, targetUserId, onUpdate);
+
   const canEdit = !readOnly;
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState(getFormDataFromProfile(profile));
-  const [errors, setErrors] = useState({});
-  const { user } = useAuth();
-
-  useEffect(() => {
-    // eslint-disable-next-line
-    setFormData(getFormDataFromProfile(profile));
-    setErrors({});
-  }, [profile]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    if (errors[name]) {
-      setErrors({ ...errors, [name]: '' });
-    }
-  };
-
-  const handleSave = async () => {
-    const {
-      isValid,
-      errors: validationErrors,
-      data: sanitizedData,
-    } = validateWithSchema(profileUpdateSchema, formData);
-
-    if (!isValid) {
-      setErrors(validationErrors);
-      return;
-    }
-
-    setLoading(true);
-    const userId = targetUserId || user?.id;
-    const result = await updateMainInfo(userId, sanitizedData);
-
-    if (result.success) {
-      setIsEditing(false);
-      onUpdate({ silent: true });
-    } else {
-      // TODO: replace alert with GeneralModal (unified app modal) for error feedback
-      alert('Failed to update: ' + result.error);
-    }
-    setLoading(false);
-  };
-
-  const handleCancel = () => {
-    setFormData(getFormDataFromProfile(profile));
-    setIsEditing(false);
-  };
 
   if (loading) {
     return (
@@ -101,119 +49,12 @@ const MainInfo = ({ profile, onUpdate, readOnly = false, targetUserId = null }) 
           ))}
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <div>
-          <label className="label-medical">Full Name</label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            disabled={!isEditing}
-            className={`input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed ${
-              errors.name ? 'border-red-500' : ''
-            }`}
-          />
-          {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name}</p>}
-        </div>
-
-        <div>
-          <label className="label-medical">Phone Number</label>
-          <input
-            type="tel"
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            disabled={!isEditing}
-            className={`input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed ${
-              errors.phone ? 'border-red-500' : ''
-            }`}
-          />
-          {errors.phone && <p className="text-sm text-red-500 mt-1">{errors.phone}</p>}
-        </div>
-
-        <div>
-          <label className="label-medical">Age</label>
-          <input
-            type="text"
-            value={computeAge(formData.date_of_birth)}
-            readOnly
-            className="input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed"
-          />
-        </div>
-
-        {isEditing && (
-          <div>
-            <label className="label-medical">Birthday</label>
-            <input
-              type="date"
-              name="date_of_birth"
-              value={formData.date_of_birth}
-              onChange={handleChange}
-              className={`input-medical ${errors.date_of_birth ? 'border-red-500' : ''}`}
-            />
-            {errors.date_of_birth && (
-              <p className="text-sm text-red-500 mt-1">{errors.date_of_birth}</p>
-            )}
-          </div>
-        )}
-
-        <div>
-          <label className="label-medical">Nationality</label>
-          <select
-            name="nationality"
-            value={formData.nationality}
-            onChange={handleChange}
-            disabled={!isEditing}
-            className={`input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed ${
-              errors.nationality ? 'border-red-500' : ''
-            }`}
-          >
-            <option value="">Select Nationality</option>
-            {countries.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-          {errors.nationality && <p className="text-sm text-red-500 mt-1">{errors.nationality}</p>}
-        </div>
-
-        <div>
-          <label className="label-medical">Gender</label>
-          <select
-            name="gender"
-            value={formData.gender}
-            onChange={handleChange}
-            disabled={!isEditing}
-            className={`input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed ${
-              errors.gender ? 'border-red-500' : ''
-            }`}
-          >
-            <option value="">Select Gender</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-          </select>
-          {errors.gender && <p className="text-sm text-red-500 mt-1">{errors.gender}</p>}
-        </div>
-
-        <div className={isEditing ? 'md:col-span-2' : ''}>
-          <label className="label-medical">Government ID</label>
-          <input
-            type="text"
-            name="id_number"
-            value={formData.id_number}
-            onChange={handleChange}
-            disabled={!isEditing}
-            placeholder="National ID, Passport, or Driver's License"
-            className={`input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed ${
-              errors.id_number ? 'border-red-500' : ''
-            }`}
-          />
-          {errors.id_number && <p className="text-sm text-red-500 mt-1">{errors.id_number}</p>}
-        </div>
-      </div>
+      <MainInfoForm
+        formData={formData}
+        errors={errors}
+        isEditing={isEditing}
+        onChange={handleChange}
+      />
     </div>
   );
 };
