@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { Search, User, UserX } from 'lucide-react';
+import { Search, User, UserX, Check } from 'lucide-react';
 import { searchUsers } from '../services/api';
 
 const UserSearchInput = ({ onUserSelect, selectedUser = null, currentUserId = null }) => {
@@ -128,42 +128,43 @@ const UserSearchInput = ({ onUserSelect, selectedUser = null, currentUserId = nu
                           : 'hover:bg-medical-gray-50'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 flex-1">
-                        <div className="w-10 h-10 rounded-full bg-medical-primary/10 flex items-center justify-center">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="w-10 h-10 rounded-full bg-medical-primary/10 flex items-center justify-center shrink-0">
                           <User className="w-6 h-6 text-medical-primary" />
                         </div>
-                        <div className="flex-1">
-                          <p className="font-semibold text-medical-dark">{user.name}</p>
-                          <p className="text-xs text-medical-gray-500 font-mono">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-medical-dark truncate">{user.name}</p>
+                          <p className="text-xs text-medical-gray-500 font-mono truncate">
                             ID: {user.id.substring(0, 8).toUpperCase()}
                           </p>
                           {user.email && (
-                            <p className="text-sm text-medical-gray-400">{user.email}</p>
+                            <p className="text-sm text-medical-gray-400 truncate">{user.email}</p>
                           )}
                         </div>
                       </div>
-                      <div>
+                      <div className="shrink-0">
                         {status === 'connected' ? (
-                          <span className="px-3 py-1 bg-medical-gray-200 text-medical-gray-600 text-sm rounded-full">
-                            Already connected
+                          <span className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 text-xs font-medium rounded-full whitespace-nowrap">
+                            <Check className="w-3.5 h-3.5" />
+                            Connected
                           </span>
                         ) : status === 'pending_sent' ? (
-                          <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-sm rounded-full">
+                          <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-sm rounded-full whitespace-nowrap">
                             Request sent
                           </span>
                         ) : status === 'pending_received' ? (
-                          <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full">
+                          <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full whitespace-nowrap">
                             Request received
                           </span>
                         ) : isSelected ? (
-                          <span className="px-3 py-1 bg-medical-primary text-white text-sm rounded-full">
+                          <span className="px-3 py-1 bg-medical-primary text-white text-sm rounded-full whitespace-nowrap">
                             Selected
                           </span>
                         ) : (
                           <button
                             onClick={() => handleSelectUser(user)}
-                            className="btn-medical-primary text-sm px-4 py-2"
+                            className="btn-medical-primary text-sm px-4 py-2 whitespace-nowrap"
                           >
                             Select
                           </button>

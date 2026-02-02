@@ -158,10 +158,10 @@ const AddConnectionModal = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white rounded-lg shadow-medical-lg w-full max-w-2xl overflow-hidden animate-slide-down">
+      <div className="bg-white rounded-lg shadow-medical-lg w-full max-w-2xl overflow-hidden animate-slide-down flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-medical-gray-200">
           <h2 className="text-2xl font-semibold text-medical-dark">
@@ -205,7 +205,7 @@ const AddConnectionModal = ({
         )}
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+        <div className="p-6 overflow-y-auto flex-1 min-h-0">
           {isEditMode && isEditingLinked ? (
             <div className="space-y-6">
               <div className="p-4 bg-medical-light border border-medical-primary/20 rounded-lg">
