@@ -53,15 +53,17 @@ def validate_password(password: str, min_length: int = 8) -> str:
     if len(password) < min_length:
         raise ValidationError(f"Password must be at least {min_length} characters long")
     
+    _check_password_complexity(password)
+        
+    return password
+
+def _check_password_complexity(password: str):
     # Check for complexity (at least one digit and one letter)
-    # This is a basic rule, can be expanded based on requirements
     if not any(char.isdigit() for char in password):
         raise ValidationError("Password must contain at least one number")
         
     if not any(char.isalpha() for char in password):
         raise ValidationError("Password must contain at least one letter")
-        
-    return password
 
 def validate_phone(phone: Optional[str]) -> Optional[str]:
     """

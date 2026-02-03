@@ -43,39 +43,31 @@ def get_profile_picture_url(user_id: str, supabase_service: 'SupabaseService') -
         avatar_data = supabase_service.get_face_image_metadata(user_id, 'avatar')
         
         if avatar_data:
-            image_path = avatar_data['image_url']
-            created_at = avatar_data['created_at']
-            timestamp = 0
-            try:
-                dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-                timestamp = int(dt.timestamp())
-            except ValueError:
-                pass
-                
-            base_url = supabase_service.get_storage_public_url(image_path)
-            return f"{base_url}?t={timestamp}"
+            return _construct_timestamped_url(supabase_service, avatar_data['image_url'], avatar_data['created_at'])
 
         # Fallback to 'front' image
         front_data = supabase_service.get_face_image_metadata(user_id, 'front')
         
         if front_data:
-            image_path = front_data['image_url']
-            created_at = front_data['created_at']
-            timestamp = 0
-            try:
-                dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-                timestamp = int(dt.timestamp())
-            except ValueError:
-                pass
-            
-            base_url = supabase_service.get_storage_public_url(image_path)
-            return f"{base_url}?t={timestamp}"
+            return _construct_timestamped_url(supabase_service, front_data['image_url'], front_data['created_at'])
         
         return None
         
     except Exception as e:
         logger.error(f"Error getting profile picture for user {user_id}: {str(e)}")
         return None
+
+def _construct_timestamped_url(supabase_service, image_path: str, created_at: str) -> str:
+    """Helper to append timestamp to image URL for cache busting."""
+    timestamp = 0
+    try:
+        dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+        timestamp = int(dt.timestamp())
+    except ValueError:
+        pass
+        
+    base_url = supabase_service.get_storage_public_url(image_path)
+    return f"{base_url}?t={timestamp}"
 
 
 def save_profile_picture(user_id: str, image_bytes: bytes, supabase_service: 'SupabaseService') -> str:
