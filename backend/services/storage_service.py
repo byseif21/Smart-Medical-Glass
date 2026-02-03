@@ -279,16 +279,8 @@ class SupabaseService:
         Returns:
             Password hash string or None
         """
-        try:
-            record = self._get_user_dict('id', user_id, "Failed to retrieve password hash", select='password_hash')
-            return record.get('password_hash') if record else None
-        except Exception as e:
-            # Re-raise as is since _get_user_dict already wraps it, 
-            # but for signature consistency we can just let it propagate or wrap again if needed.
-            # Actually _get_user_dict raises SupabaseError, so we can just return logic.
-            # Wait, get_user_password_hash needs to extract the field.
-            # Let's handle the extraction here safely.
-            raise e
+        record = self._get_user_dict('id', user_id, "Failed to retrieve password hash", select='password_hash')
+        return record.get('password_hash') if record else None
 
     def get_users_with_encodings(self) -> List[Dict[str, Any]]:
         """

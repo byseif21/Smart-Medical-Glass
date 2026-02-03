@@ -50,19 +50,6 @@ class ConnectionService:
     def validate_relationship(self, relationship: str) -> bool:
         return relationship in RELATIONSHIP_TYPES
 
-    def validate_phone_number(self, phone: str) -> bool:
-        """
-        Validate phone number format.
-        Accepts formats like: +1234567890, (123) 456-7890, 123-456-7890, 1234567890
-        """
-        if not phone:
-            return False
-        try:
-            validate_phone(phone)
-            return True
-        except ValidationError:
-            return False
-
     def _validate_name(self, name: Optional[str]):
         if name is not None and len(name.strip()) < 2:
             raise HTTPException(status_code=400, detail="Name is required and must be at least 2 characters")
