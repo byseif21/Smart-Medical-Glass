@@ -487,27 +487,25 @@ def upload_face_images(supabase, user_id: str, images: Dict[str, bytes]) -> None
             logger.warning(f"Failed to upload {angle} image: {str(e)}")
 
 
-async def collect_face_images(
-    image: Optional[UploadFile] = None,
-    image_front: Optional[UploadFile] = None,
-    image_left: Optional[UploadFile] = None,
-    image_right: Optional[UploadFile] = None,
-    image_up: Optional[UploadFile] = None,
-    image_down: Optional[UploadFile] = None
-) -> Dict[str, bytes]:
+async def collect_face_images(images: Dict[str, Optional[UploadFile]]) -> Dict[str, bytes]:
     """
     Collect and read bytes from uploaded face images.
+    
+    Args:
+        images: Dictionary mapping image types (e.g., 'image_front') to UploadFile objects.
     """
     face_images = {}
     
     # Map input args to angle names
     # Priority: image_front > image (legacy)
+    front = images.get('image_front') or images.get('image')
+    
     inputs = {
-        'front': image_front or image,
-        'left': image_left,
-        'right': image_right,
-        'up': image_up,
-        'down': image_down
+        'front': front,
+        'left': images.get('image_left'),
+        'right': images.get('image_right'),
+        'up': images.get('image_up'),
+        'down': images.get('image_down')
     }
 
     for angle, file_obj in inputs.items():

@@ -231,10 +231,14 @@ async def update_face_enrollment(
         verify_user_access(current_user, user_id)
 
         # Collect face images
-        face_images = await collect_face_images(
-            uploads.image, uploads.image_front, uploads.image_left, 
-            uploads.image_right, uploads.image_up, uploads.image_down
-        )
+        face_images = await collect_face_images({
+            'image': uploads.image,
+            'image_front': uploads.image_front,
+            'image_left': uploads.image_left,
+            'image_right': uploads.image_right,
+            'image_up': uploads.image_up,
+            'image_down': uploads.image_down
+        })
         
         if not face_images:
             raise HTTPException(status_code=400, detail="At least one face image is required")
