@@ -104,8 +104,6 @@ class TestConnectionService(unittest.IsolatedAsyncioTestCase):
             return MagicMock(data=[])
             
         mock_query_builder.execute.side_effect = side_effect
-
-
         
         # We can set side_effect on execute()
         mock_execute = MagicMock()

@@ -118,6 +118,11 @@ async def get_all_connections(
     """
     target_id = user_id if user_id else current_user_id
     # TODO: Add permission check if target_id != current_user_id (e.g., only admin or self can view)
+    if target_id != current_user_id:
+        # Currently we only allow users to view their own connections. 
+        # Admin access would require fetching user role which is not available in this scope yet.
+        raise HTTPException(status_code=403, detail="You can only view your own connections.")
+        
     return await service.get_all_connections(target_id)
 
 @router.put("/linked/{connection_id}", response_model=UpdateConnectionResponse)

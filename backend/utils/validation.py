@@ -59,6 +59,7 @@ def validate_password(password: str, min_length: int = 8) -> str:
 
 def _check_password_complexity(password: str):
     # Check for complexity (at least one digit and one letter)
+    # This is a basic rule, can be expanded based on requirements
     if not any(char.isdigit() for char in password):
         raise ValidationError("Password must contain at least one number")
         

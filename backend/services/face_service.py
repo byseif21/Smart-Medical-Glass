@@ -254,7 +254,7 @@ class FaceRecognitionService:
 
             return FaceMatch(
                 matched=bool(is_match),
-                user_id=stored_encodings[best_match_index].user_id if stored_encodings else None,
+                user_id=stored_encodings[best_match_index].user_id,
                 confidence=float(confidence),
                 distance=float(best_distance)
             )
