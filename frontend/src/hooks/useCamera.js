@@ -43,15 +43,15 @@ const captureVideoFrame = (video, fileName) => {
 export const useCamera = () => {
   const [stream, setStream] = useState(null);
   const [error, setError] = useState('');
+  const [facingMode, setFacingMode] = useState('user');
   const videoRef = useRef(null);
   const streamRef = useRef(null);
 
   const startCamera = useCallback(async () => {
     try {
       stopMediaStream(streamRef.current);
-
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: 640, height: 480 },
+        video: { facingMode, width: 640, height: 480 },
       });
 
       streamRef.current = mediaStream;
@@ -61,10 +61,10 @@ export const useCamera = () => {
       }
       setError('');
     } catch (err) {
-      setError('Unable to access camera. Please check permissions.');
       console.error('Camera error:', err);
+      setError('Unable to access camera. Please check permissions or try a different device.');
     }
-  }, []);
+  }, [facingMode]);
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
@@ -75,6 +75,10 @@ export const useCamera = () => {
         videoRef.current.srcObject = null;
       }
     }
+  }, []);
+
+  const switchCamera = useCallback(() => {
+    setFacingMode((prev) => (prev === 'user' ? 'environment' : 'user'));
   }, []);
 
   const captureImage = useCallback((fileName = 'captured-face.jpg') => {
@@ -95,6 +99,8 @@ export const useCamera = () => {
     error,
     startCamera,
     stopCamera,
+    switchCamera,
+    facingMode,
     captureImage,
   };
 };

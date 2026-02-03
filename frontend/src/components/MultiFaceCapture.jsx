@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { SwitchCamera } from 'lucide-react';
 import { useCamera } from '../hooks/useCamera';
 
 const angles = [
@@ -188,16 +189,16 @@ CaptureControls.propTypes = {
   currentLabel: PropTypes.string.isRequired,
 };
 
-const MultiFaceCapture = ({ onComplete }) => {
-  const { videoRef, stream, error, startCamera, stopCamera, captureImage } = useCamera();
+const MultiFaceCapture = ({ onComplete, showSwitch = false }) => {
+  const { videoRef, stream, error, startCamera, stopCamera, switchCamera, captureImage } =
+    useCamera();
   const { currentAngle, capturedImages, handleCapture, skipAngle, retake, nextStep } =
     useMultiCapture(captureImage, stopCamera, onComplete);
 
   useEffect(() => {
     startCamera();
     return () => stopCamera();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [startCamera, stopCamera]);
 
   const progress = ((currentAngle + 1) / angles.length) * 100;
   const currentAngleData = angles[currentAngle];
@@ -222,6 +223,20 @@ const MultiFaceCapture = ({ onComplete }) => {
 
       <div className="relative bg-medical-gray-100 rounded-lg overflow-hidden aspect-[3/4] sm:aspect-video">
         <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+
+        {/* Camera Controls */}
+        {showSwitch && (
+          <div className="absolute top-4 right-4 z-20">
+            <button
+              onClick={switchCamera}
+              className="p-2 bg-black/40 hover:bg-black/60 text-white rounded-full backdrop-blur-sm transition-all duration-200"
+              title="Switch Camera"
+            >
+              <SwitchCamera className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+          </div>
+        )}
+
         <FaceGuideOverlay isCaptured={isCurrentCaptured} />
       </div>
 
@@ -260,6 +275,7 @@ const MultiFaceCapture = ({ onComplete }) => {
 
 MultiFaceCapture.propTypes = {
   onComplete: PropTypes.func.isRequired,
+  showSwitch: PropTypes.bool,
 };
 
 export default MultiFaceCapture;

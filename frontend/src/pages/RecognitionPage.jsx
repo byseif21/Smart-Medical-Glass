@@ -346,7 +346,7 @@ const RecognitionPage = () => {
                   <ChevronLeft className="w-5 h-5" />
                   Back
                 </button>
-                <FaceCapture onCapture={handleFaceSubmit} />
+                <FaceCapture onCapture={handleFaceSubmit} showSwitch={true} />
                 {error && (
                   <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
                     <p className="text-red-600 text-sm text-center">{error}</p>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { Camera, RefreshCw } from 'lucide-react';
+import { SwitchCamera, Camera, RefreshCw } from 'lucide-react';
 import { useCamera } from '../hooks/useCamera';
 
 const overlayStyles = {
@@ -16,8 +16,9 @@ const overlayStyles = {
   },
 };
 
-const FaceCapture = ({ onCapture, variant = 'lg' }) => {
-  const { videoRef, stream, error, startCamera, stopCamera, captureImage } = useCamera();
+const FaceCapture = ({ onCapture, variant = 'lg', showSwitch = false }) => {
+  const { videoRef, stream, error, startCamera, stopCamera, switchCamera, captureImage } =
+    useCamera();
   const [captured, setCaptured] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
 
@@ -29,8 +30,7 @@ const FaceCapture = ({ onCapture, variant = 'lg' }) => {
     return () => {
       stopCamera();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [startCamera, stopCamera]);
 
   const handleCapture = async () => {
     try {
@@ -73,6 +73,19 @@ const FaceCapture = ({ onCapture, variant = 'lg' }) => {
               muted
               className="w-full h-full object-cover"
             />
+            {/* Camera Controls */}
+            {showSwitch && (
+              <div className="absolute top-4 right-4 z-20">
+                <button
+                  onClick={switchCamera}
+                  className="p-2 bg-black/40 hover:bg-black/60 text-white rounded-full backdrop-blur-sm transition-all duration-200"
+                  title="Switch Camera"
+                >
+                  <SwitchCamera className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
+              </div>
+            )}
+
             {/* Face guide overlay */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
               <div
@@ -126,6 +139,7 @@ const FaceCapture = ({ onCapture, variant = 'lg' }) => {
 FaceCapture.propTypes = {
   onCapture: PropTypes.func.isRequired,
   variant: PropTypes.oneOf(['sm', 'lg']),
+  showSwitch: PropTypes.bool,
 };
 
 export default FaceCapture;
