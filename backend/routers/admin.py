@@ -6,9 +6,10 @@ from services.search_service import get_users_paginated
 from models.user import UserSearchFilters
 from dependencies import get_current_user
 from services.user_service import delete_user_fully
+from services.storage_service import get_supabase_service
 from utils.config import get_config
 
-router = APIRouter(prefix="/api/users", tags=["admin"])
+router = APIRouter(prefix="/api/admin/users", tags=["admin"])
 settings = get_config()
 
 # --- Admin Models ---

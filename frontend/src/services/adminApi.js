@@ -14,7 +14,7 @@ export const getAdminUsers = async (page = 1, pageSize = 20, q = '', role = '') 
     if (q) params.append('q', q);
     if (role) params.append('role', role);
 
-    const response = await apiClient.get(`/api/users/?${params.toString()}`);
+    const response = await apiClient.get(`/api/admin/users/?${params.toString()}`);
     return {
       success: true,
       data: response.data,
@@ -33,7 +33,7 @@ export const getAdminUsers = async (page = 1, pageSize = 20, q = '', role = '') 
  */
 export const deleteUserAdmin = async (userId) => {
   try {
-    const response = await apiClient.delete(`/api/users/${userId}`);
+    const response = await apiClient.delete(`/api/admin/users/${userId}`);
     return {
       success: true,
       data: response.data,
@@ -53,7 +53,7 @@ export const deleteUserAdmin = async (userId) => {
  */
 export const updateUserAdmin = async (userId, data) => {
   try {
-    const response = await apiClient.put(`/api/users/${userId}`, data);
+    const response = await apiClient.put(`/api/admin/users/${userId}`, data);
     return {
       success: true,
       data: response.data,
