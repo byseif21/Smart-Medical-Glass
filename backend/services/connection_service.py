@@ -1,4 +1,5 @@
 from typing import List, Optional, Dict, Any, Union
+from dataclasses import dataclass
 from datetime import datetime
 import re
 from fastapi import HTTPException
@@ -34,6 +35,13 @@ RELATIONSHIP_TYPES = [
     "Neighbor",
     "Other"
 ]
+
+@dataclass
+class RelationshipQueryConfig:
+    table: str
+    match_col: str
+    target_col: str
+    status: Optional[str] = None
 
 class ConnectionService:
     def __init__(self):
@@ -435,6 +443,14 @@ class ConnectionService:
 
         raise HTTPException(status_code=404, detail="Connection not found")
 
+    def _batch_fetch_relationships(self, config: RelationshipQueryConfig, match_id: str, target_ids: List[str]) -> List[str]:
+        """Helper to fetch related IDs in batch."""
+        query = self.supabase.client.table(config.table).select(config.target_col).eq(config.match_col, match_id).in_(config.target_col, target_ids)
+        if config.status:
+            query = query.eq('status', config.status)
+        result = query.execute()
+        return [item[config.target_col] for item in result.data or []]
+
     def get_connection_statuses(self, current_user_id: str, target_user_ids: List[str]) -> Dict[str, str]:
         """
         Check connection statuses between current user and a list of target users.
@@ -447,39 +463,19 @@ class ConnectionService:
         user_statuses = {}
         try:
             # 1. Check existing connections
-            connections = (
-                self.supabase.client.table('user_connections')
-                .select('connected_user_id')
-                .eq('user_id', current_user_id)
-                .in_('connected_user_id', target_user_ids)
-                .execute()
-            )
-            for conn in connections.data or []:
-                user_statuses[conn['connected_user_id']] = "connected"
+            conn_config = RelationshipQueryConfig('user_connections', 'user_id', 'connected_user_id')
+            for uid in self._batch_fetch_relationships(conn_config, current_user_id, target_user_ids):
+                user_statuses[uid] = "connected"
 
             # 2. Check sent requests (pending)
-            sent_requests = (
-                self.supabase.client.table('connection_requests')
-                .select('receiver_id')
-                .eq('sender_id', current_user_id)
-                .in_('receiver_id', target_user_ids)
-                .eq('status', 'pending')
-                .execute()
-            )
-            for req in sent_requests.data or []:
-                user_statuses[req['receiver_id']] = "pending_sent"
+            sent_config = RelationshipQueryConfig('connection_requests', 'sender_id', 'receiver_id', 'pending')
+            for uid in self._batch_fetch_relationships(sent_config, current_user_id, target_user_ids):
+                user_statuses[uid] = "pending_sent"
 
             # 3. Check received requests (pending)
-            received_requests = (
-                self.supabase.client.table('connection_requests')
-                .select('sender_id')
-                .eq('receiver_id', current_user_id)
-                .in_('sender_id', target_user_ids)
-                .eq('status', 'pending')
-                .execute()
-            )
-            for req in received_requests.data or []:
-                user_statuses.setdefault(req['sender_id'], "pending_received")
+            recv_config = RelationshipQueryConfig('connection_requests', 'receiver_id', 'sender_id', 'pending')
+            for uid in self._batch_fetch_relationships(recv_config, current_user_id, target_user_ids):
+                user_statuses.setdefault(uid, "pending_received")
                 
         except Exception as e:
             print(f"Error checking connection statuses: {e}")
