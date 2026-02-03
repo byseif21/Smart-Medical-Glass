@@ -103,9 +103,9 @@ def _persist_user_registration(
         user_id = user_response.id
 
         try:
-             upload_face_images(supabase, user_id, face_images)
+            upload_face_images(supabase, user_id, face_images)
         except Exception as e:
-             print(f"Error uploading images: {e}")
+            print(f"Error uploading images: {e}")
 
         # Return dictionary representation of the created user
         return user_response.model_dump()
