@@ -10,7 +10,6 @@ import uuid
 
 from utils.config import config
 from models.user import UserCreate, UserResponse, UserSearchFilters
-from models.face_encoding import FaceEncoding
 
 
 class SupabaseError(Exception):

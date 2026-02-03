@@ -1,7 +1,6 @@
 """
 Authentication related Pydantic models.
 """
-from typing import Optional
 from pydantic import BaseModel, Field, field_validator
 try:
     import email_validator  # noqa: F401

@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 def apply_privacy_settings(user: Dict[str, Any], current_user_role: str = "user") -> Dict[str, Any]:
     """

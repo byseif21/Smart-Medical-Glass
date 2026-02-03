@@ -3,7 +3,6 @@ Database migration utility for automatic schema updates.
 Runs migrations on backend startup to keep database in sync.
 """
 
-import os
 from pathlib import Path
 from supabase import Client
 import logging

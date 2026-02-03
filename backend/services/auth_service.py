@@ -1,7 +1,7 @@
 from typing import Dict, Any, Optional
 from datetime import datetime, timedelta
 import jwt
-from fastapi import HTTPException, UploadFile
+from fastapi import HTTPException
 
 from services.storage_service import get_supabase_service, SupabaseService
 from services.face_service import get_face_service

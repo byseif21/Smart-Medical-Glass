@@ -26,8 +26,7 @@ except ImportError:
 from models.face_encoding import (
     FaceExtractionResult,
     FaceMatch,
-    FaceEncodingWithMetadata,
-    FaceEncodingStorage
+    FaceEncodingWithMetadata
 )
 from utils.config import config
 from utils.image_processor import ImageProcessor, ImageProcessingError

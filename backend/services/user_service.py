@@ -5,7 +5,7 @@ from services.storage_service import get_supabase_service
 from services.face_service import get_face_service, FaceRecognitionError, collect_face_images, upload_face_images
 from services.security import hash_password, verify_password
 from services.profile_picture_service import get_profile_picture_url, ProfilePictureError
-from utils.validation import normalize_email, sanitize_text, validate_password, validate_phone, ValidationError
+from utils.validation import validate_password, ValidationError
 from utils.privacy import apply_privacy_settings
 from services.connection_service import ConnectionService
 

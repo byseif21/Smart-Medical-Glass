@@ -14,7 +14,6 @@ print("=" * 60)
 # Test 1: Import utilities
 print("\n1. Backend module import sanity...")
 try:
-    import importlib
     print("   ✓ Python import system OK")
 except Exception as e:
     print(f"   ✗ Import system error: {e}")
@@ -23,7 +22,7 @@ except Exception as e:
 # Test 2: Import config
 print("\n2. Testing config imports...")
 try:
-    from utils.config import config, get_config
+    from utils.config import config
     print("   ✓ Config imported successfully")
     print(f"   - Face recognition tolerance: {config.FACE_RECOGNITION_TOLERANCE}")
     print(f"   - Max image size: {config.MAX_IMAGE_SIZE_MB} MB")
@@ -37,8 +36,6 @@ print("\n3. Testing model imports...")
 try:
     from models.face_encoding import (
         FaceEncoding,
-        FaceEncodingWithMetadata,
-        FaceEncodingStorage,
         FaceMatch,
         FaceExtractionResult
     )
@@ -132,7 +129,7 @@ except Exception as e:
 # Test 6: Test face service (if face_recognition is installed)
 print("\n6. Testing face recognition service...")
 try:
-    from services.face_service import get_face_service, FaceRecognitionService
+    from services.face_service import get_face_service
     print("   ✓ FaceRecognitionService imported successfully")
     
     # Try to initialize service

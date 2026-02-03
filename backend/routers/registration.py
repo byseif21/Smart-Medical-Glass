@@ -1,5 +1,5 @@
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
-from typing import Optional, Dict, Any
+from fastapi import APIRouter, UploadFile, File, Form, Depends
+from typing import Optional
 from dataclasses import dataclass
 from services.user_service import register_new_user
 from models.user import RegistrationRequest

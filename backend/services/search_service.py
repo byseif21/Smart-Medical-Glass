@@ -1,6 +1,4 @@
-from typing import List, Dict, Any, Optional, Tuple
-import re
-import uuid
+from typing import Dict, Any
 from services.storage_service import get_supabase_service
 from models.user import UserSearchFilters
 

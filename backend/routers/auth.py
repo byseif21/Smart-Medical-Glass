@@ -1,5 +1,5 @@
-from fastapi import APIRouter, HTTPException, Depends, File, UploadFile
-from typing import Optional, Dict, Any
+from fastapi import APIRouter, Depends, File, UploadFile
+from typing import Dict, Any
 from services.auth_service import AuthService
 from dependencies import get_current_user
 from utils.error_handlers import service_guard

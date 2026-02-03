@@ -32,8 +32,6 @@ app.add_middleware(
 )
 
 # Include routers
-from routers import auth, profile, users, connections, admin
-
 app.include_router(registration.router)
 app.include_router(recognition.router)
 app.include_router(auth.router)

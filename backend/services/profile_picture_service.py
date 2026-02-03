@@ -4,7 +4,6 @@ Handles retrieval of front-facing face images for profile display.
 """
 
 from typing import Optional, TYPE_CHECKING
-from supabase import Client
 from datetime import datetime
 import logging
 from services.face_service import get_face_service
