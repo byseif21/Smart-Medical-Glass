@@ -52,24 +52,25 @@ class Config:
         """
         errors = []
         
-        # Check required Supabase configuration
-        if not cls.SUPABASE_URL:
-            errors.append("SUPABASE_URL is required")
+        # 1. Check required fields
+        required_fields = [
+            ("SUPABASE_URL", cls.SUPABASE_URL),
+            ("SUPABASE_KEY", cls.SUPABASE_KEY)
+        ]
+        for name, value in required_fields:
+            if not value:
+                errors.append(f"{name} is required")
         
-        if not cls.SUPABASE_KEY:
-            errors.append("SUPABASE_KEY is required")
+        # 2. Validate ranges and constraints
+        constraints = [
+            (0.0 <= cls.FACE_RECOGNITION_TOLERANCE <= 1.0, "FACE_RECOGNITION_TOLERANCE must be between 0.0 and 1.0"),
+            (cls.MAX_IMAGE_SIZE_MB > 0, "MAX_IMAGE_SIZE_MB must be greater than 0"),
+            (1 <= cls.PORT <= 65535, "PORT must be between 1 and 65535")
+        ]
         
-        # Validate tolerance range
-        if not 0.0 <= cls.FACE_RECOGNITION_TOLERANCE <= 1.0:
-            errors.append("FACE_RECOGNITION_TOLERANCE must be between 0.0 and 1.0")
-        
-        # Validate max image size
-        if cls.MAX_IMAGE_SIZE_MB <= 0:
-            errors.append("MAX_IMAGE_SIZE_MB must be greater than 0")
-        
-        # Validate port
-        if not 1 <= cls.PORT <= 65535:
-            errors.append("PORT must be between 1 and 65535")
+        for is_valid, error_msg in constraints:
+            if not is_valid:
+                errors.append(error_msg)
         
         if errors:
             raise ValueError(
