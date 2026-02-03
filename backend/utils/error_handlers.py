@@ -1,38 +1,40 @@
 from fastapi import HTTPException
-from contextlib import asynccontextmanager
 from functools import wraps
 from typing import Optional, Callable, Any
 
-@asynccontextmanager
-async def service_error_handler(error_message: str = "Operation failed"):
+class service_guard:
     """
-    Context manager for handling service errors in a standardized way.
+    Unified error handler for service operations.
+    Can be used as both a decorator and a context manager.
     
-    Usage:
-        async with service_error_handler("Custom error message"):
-            result = await service.some_method()
-            
-    Raises:
-        HTTPException: Re-raises existing HTTPExceptions or creates a new 500 error for other exceptions.
+    Usage as decorator:
+        @service_guard("Custom error message")
+        async def my_method(): ...
+        
+    Usage as context manager:
+        async with service_guard("Custom error message"):
+            await service.method()
     """
-    try:
-        yield
-    except Exception as e:
-        _handle_exception(e, error_message)
+    def __init__(self, error_message: str = "Operation failed"):
+        self.error_message = error_message
+        
+    async def __aenter__(self):
+        return self
+        
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if exc_val:
+            _handle_exception(exc_val, self.error_message)
+            return False # Should not be reached as _handle_exception raises
+        return False
 
-def handle_service_errors(error_message: str = "Operation failed"):
-    """
-    Decorator for handling service errors.
-    """
-    def decorator(func):
+    def __call__(self, func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
             try:
                 return await func(*args, **kwargs)
             except Exception as e:
-                _handle_exception(e, error_message)
+                _handle_exception(e, self.error_message)
         return wrapper
-    return decorator
 
 def _handle_exception(e: Exception, error_message: str):
     """Shared exception handling logic"""

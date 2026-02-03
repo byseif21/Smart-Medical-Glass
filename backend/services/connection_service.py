@@ -17,7 +17,7 @@ from models.connections import (
     ExternalContact,
     ConnectedUser
 )
-from utils.error_handlers import handle_service_errors
+from utils.error_handlers import service_guard
 
 RELATIONSHIP_TYPES = [
     "Father",
@@ -127,7 +127,7 @@ class ConnectionService:
         if existing_connection.data:
             raise HTTPException(status_code=409, detail="Connection already exists")
 
-    @handle_service_errors("Failed to create connection request")
+    @service_guard("Failed to create connection request")
     async def create_connection_request(self, sender_id: str, request: CreateLinkedConnectionRequest) -> CreateLinkedConnectionResponse:
         receiver_id = request.connected_user_id
         relationship = request.relationship
@@ -159,7 +159,7 @@ class ConnectionService:
             request_id=new_req.data[0]['id']
         )
 
-    @handle_service_errors("Failed to fetch pending requests")
+    @service_guard("Failed to fetch pending requests")
     async def get_pending_requests(self, user_id: str) -> List[Dict[str, Any]]:
         # Keeping return type as List[Dict] for now to avoid complexity in mapping nested user object to model inside service
         # The router will handle the mapping to ConnectionRequestResponse
@@ -168,7 +168,7 @@ class ConnectionService:
         ).eq('receiver_id', user_id).eq('status', 'pending').execute()
         return response.data if response.data else []
 
-    @handle_service_errors("Failed to accept request")
+    @service_guard("Failed to accept request")
     async def accept_request(self, request_id: str, user_id: str) -> CreateLinkedConnectionResponse:
         req_res = self.supabase.client.table('connection_requests').select('*').eq('id', request_id).execute()
         if not req_res.data:
@@ -187,7 +187,7 @@ class ConnectionService:
         self.supabase.client.table('connection_requests').update({"status": "accepted"}).eq('id', request_id).execute()
         return CreateLinkedConnectionResponse(success=True, message="Connection accepted")
 
-    @handle_service_errors("Failed to reject request")
+    @service_guard("Failed to reject request")
     async def reject_request(self, request_id: str, user_id: str) -> CreateLinkedConnectionResponse:
         self.supabase.client.table('connection_requests').update({"status": "rejected"}).eq('id', request_id).eq('receiver_id', user_id).execute()
         return CreateLinkedConnectionResponse(success=True, message="Connection rejected")
@@ -207,7 +207,7 @@ class ConnectionService:
         if not user_check.data:
             raise HTTPException(status_code=404, detail="Connected user not found")
 
-    @handle_service_errors("Failed to create connection")
+    @service_guard("Failed to create connection")
     async def create_linked_connection(self, user_id: str, request: CreateLinkedConnectionRequest) -> CreateLinkedConnectionResponse:
         connected_user_id = request.connected_user_id
         relationship = request.relationship
@@ -233,7 +233,7 @@ class ConnectionService:
             message="Connection created successfully"
         )
 
-    @handle_service_errors("Failed to create external contact")
+    @service_guard("Failed to create external contact")
     async def create_external_contact(self, user_id: str, request: CreateExternalContactRequest) -> CreateExternalContactResponse:
         self._validate_contact_inputs(request.name, request.phone, request.relationship)
         
@@ -302,7 +302,7 @@ class ConnectionService:
                 ))
         return external_contacts
 
-    @handle_service_errors("Failed to fetch connections")
+    @service_guard("Failed to fetch connections")
     async def get_all_connections(self, user_id: str) -> GetConnectionsResponse:
         return GetConnectionsResponse(
             linked_connections=self._fetch_linked_connections(user_id),
@@ -333,7 +333,7 @@ class ConnectionService:
             'connected_user_id', user_id
         ).execute()
 
-    @handle_service_errors("Failed to update connection")
+    @service_guard("Failed to update connection")
     async def update_linked_connection(self, connection_id: str, user_id: str, request: UpdateLinkedConnectionRequest) -> UpdateConnectionResponse:
         relationship = request.relationship
         connection = self._get_and_verify_connection(connection_id, user_id)
@@ -358,7 +358,7 @@ class ConnectionService:
             
         return update_data
 
-    @handle_service_errors("Failed to update external contact")
+    @service_guard("Failed to update external contact")
     async def update_external_contact(self, contact_id: str, user_id: str, updates: UpdateExternalContactRequest) -> UpdateConnectionResponse:
         external_check = self.supabase.client.table('relatives').select(
             'id, user_id'
@@ -415,7 +415,7 @@ class ConnectionService:
         self.supabase.client.table('relatives').delete().eq('id', contact['id']).execute()
         return DeleteConnectionResponse(success=True, message="Connection deleted successfully")
 
-    @handle_service_errors("Failed to delete connection")
+    @service_guard("Failed to delete connection")
     async def delete_connection(self, connection_id: str, user_id: str) -> DeleteConnectionResponse:
         # Check linked connection first
         linked_check = self.supabase.client.table('user_connections').select(

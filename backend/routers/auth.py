@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, File, UploadFile
 from typing import Optional, Dict, Any
 from services.auth_service import AuthService
 from dependencies import get_current_user
-from utils.error_handlers import service_error_handler
+from utils.error_handlers import service_guard
 from models.auth import (
     LoginRequest, 
     LoginResponse, 
@@ -23,7 +23,7 @@ async def login(
     """
     Traditional email/password login
     """
-    async with service_error_handler("Login failed"):
+    async with service_guard("Login failed"):
         result = await service.login(credentials)
         return LoginResponse(**result)
 
@@ -35,7 +35,7 @@ async def login_with_face(
     """
     Face ID identify - identify user by face recognition (no token)
     """
-    async with service_error_handler("Face login failed"):
+    async with service_guard("Face login failed"):
         image_data = await image.read()
         return await service.login_with_face(image_data)
 
@@ -47,7 +47,7 @@ async def confirm_face_login(
     """
     Confirm Face ID login by verifying password and issuing token
     """
-    async with service_error_handler("Login failed"):
+    async with service_guard("Login failed"):
         result = await service.confirm_face_login(payload)
         return LoginResponse(**result)
 
@@ -61,5 +61,5 @@ async def change_password(
     Change user password
     """
     user_id = current_user.get("sub")
-    async with service_error_handler("Password update failed"):
+    async with service_guard("Password update failed"):
         return await service.change_password(user_id, payload)
