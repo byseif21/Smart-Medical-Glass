@@ -75,83 +75,62 @@ class FaceRecognitionService:
     def extract_encoding(self, image_bytes: bytes) -> FaceExtractionResult:
         """
         Extract face encoding from image bytes.
-        
-        Args:
-            image_bytes: Raw image bytes
-            
-        Returns:
-            FaceExtractionResult with encoding or error information
         """
         try:
-            try:
-                from utils.image_processor import ImageProcessor, ImageProcessingError
-            except Exception as import_err:
-                return FaceExtractionResult(
-                    success=False,
-                    encoding=None,
-                    error=f"Image processing dependencies not available: {str(import_err)}",
-                    face_count=0
-                )
-            image = ImageProcessor.preprocess_image(image_bytes)
-            try:
-                import face_recognition as fr
-            except ImportError:
-                return FaceExtractionResult(
-                    success=False,
-                    encoding=None,
-                    error="face_recognition not installed",
-                    face_count=0
-                )
-            face_locations = fr.face_locations(image)
-            face_count = len(face_locations)
-            if face_count == 0:
-                return FaceExtractionResult(
-                    success=False,
-                    encoding=None,
-                    error="No face detected in image",
-                    face_count=0
-                )
-            if face_count > 1:
-                return FaceExtractionResult(
-                    success=False,
-                    encoding=None,
-                    error=f"Multiple faces detected ({face_count})",
-                    face_count=face_count
-                )
-            
-            # Quality Check
-            is_valid, quality_reason = self.validate_face_quality(image, face_locations[0])
-            if not is_valid:
-                return FaceExtractionResult(
-                    success=False,
-                    encoding=None,
-                    error=f"Quality check failed: {quality_reason}",
-                    face_count=face_count
-                )
-
-            face_encodings = fr.face_encodings(image, face_locations)
-            if len(face_encodings) == 0:
-                return FaceExtractionResult(
-                    success=False,
-                    encoding=None,
-                    error="Failed to extract face encoding",
-                    face_count=face_count
-                )
-            encoding = face_encodings[0].tolist()
+            from utils.image_processor import ImageProcessor, ImageProcessingError
+            import face_recognition as fr
+        except ImportError as e:
             return FaceExtractionResult(
-                success=True,
-                encoding=encoding,
-                error=None,
-                face_count=1
+                success=False, encoding=None, 
+                error=f"Missing dependencies: {str(e)}", face_count=0
             )
+
+        try:
+            image = ImageProcessor.preprocess_image(image_bytes)
+            return self._detect_and_encode(image, fr)
         except ImageProcessingError as e:
             return FaceExtractionResult(
-                success=False,
-                encoding=None,
-                error=str(e),
-                face_count=0
+                success=False, encoding=None, error=str(e), face_count=0
             )
-    
+        except Exception as e:
+            logger.error(f"Encoding extraction failed: {e}")
+            return FaceExtractionResult(
+                success=False, encoding=None, error="Internal processing error", face_count=0
+            )
+
+    def _detect_and_encode(self, image, fr) -> FaceExtractionResult:
+        face_locations = fr.face_locations(image)
+        face_count = len(face_locations)
+        
+        if face_count == 0:
+            return FaceExtractionResult(
+                success=False, encoding=None, error="No face detected in image", face_count=0
+            )
+        if face_count > 1:
+            return FaceExtractionResult(
+                success=False, encoding=None, 
+                error=f"Multiple faces detected ({face_count})", face_count=face_count
+            )
+            
+        # Quality Check
+        is_valid, quality_reason = self.validate_face_quality(image, face_locations[0])
+        if not is_valid:
+             return FaceExtractionResult(
+                 success=False, encoding=None, 
+                 error=f"Quality check failed: {quality_reason}", face_count=face_count
+             )
+
+        face_encodings = fr.face_encodings(image, face_locations)
+        if not face_encodings:
+             return FaceExtractionResult(
+                 success=False, encoding=None, error="Failed to extract face encoding", face_count=face_count
+             )
+             
+        return FaceExtractionResult(
+            success=True, encoding=face_encodings[0].tolist(), 
+            error=None, face_count=1
+        )
+
     def save_encoding(
         self,
         user_id: str,
@@ -523,41 +502,33 @@ def upload_face_images(supabase, user_id: str, images: Dict[str, bytes]) -> None
 
 
 async def collect_face_images(
-    image: Optional[UploadFile] = None,
-    image_front: Optional[UploadFile] = None,
-    image_left: Optional[UploadFile] = None,
-    image_right: Optional[UploadFile] = None,
-    image_up: Optional[UploadFile] = None,
-    image_down: Optional[UploadFile] = None,
+    images_dict: Dict[str, Optional[UploadFile]]
 ) -> Dict[str, bytes]:
     """
     Collect and read bytes from uploaded face images.
     
     Args:
-        image: Legacy single image (treated as 'front')
-        image_front: Front face image
-        image_left: Left face image
-        image_right: Right face image
-        image_up: Up face image
-        image_down: Down face image
+        images_dict: Dictionary mapping keys (image, image_front, etc.) to UploadFile objects
         
     Returns:
         Dictionary mapping angle to image bytes
     """
     face_images = {}
-    if image:
-        face_images['front'] = await image.read()
-    if image_front:
-        face_images['front'] = await image_front.read()
-    if image_left:
-        face_images['left'] = await image_left.read()
-    if image_right:
-        face_images['right'] = await image_right.read()
-    if image_up:
-        face_images['up'] = await image_up.read()
-    if image_down:
-        face_images['down'] = await image_down.read()
     
+    mapping = {
+        'image': 'front',
+        'image_front': 'front',
+        'image_left': 'left',
+        'image_right': 'right',
+        'image_up': 'up',
+        'image_down': 'down'
+    }
+
+    for input_key, angle in mapping.items():
+        file_obj = images_dict.get(input_key)
+        if file_obj:
+            face_images[angle] = await file_obj.read()
+            
     return face_images
 
 # Singleton instance

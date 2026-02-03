@@ -1,130 +1,55 @@
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
-from typing import Optional
-import json
-from services.face_service import get_face_service, FaceRecognitionError, upload_face_images, collect_face_images
-from services.storage_service import get_supabase_service
-from services.security import hash_password
-from utils.validation import normalize_email, sanitize_text, validate_password, validate_phone, ValidationError
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
+from typing import Optional, Dict, Any
+from dataclasses import dataclass
+from services.user_service import register_new_user
+from models.user import RegistrationRequest
 
 router = APIRouter(prefix="/api", tags=["registration"])
 
+@dataclass
+class RegistrationFormData:
+    name: str = Form(...)
+    email: str = Form(...)
+    password: str = Form(...)
+    phone: Optional[str] = Form(None)
+    date_of_birth: Optional[str] = Form(None)
+    gender: Optional[str] = Form(None)
+    nationality: Optional[str] = Form(None)
+    id_number: Optional[str] = Form(None)
+    image: Optional[UploadFile] = File(None)
+    image_front: Optional[UploadFile] = File(None)
+    image_left: Optional[UploadFile] = File(None)
+    image_right: Optional[UploadFile] = File(None)
+    image_up: Optional[UploadFile] = File(None)
+    image_down: Optional[UploadFile] = File(None)
+
 @router.post("/register")
-async def register_user(
-    name: str = Form(...),
-    email: str = Form(...),
-    password: str = Form(...),
-    phone: Optional[str] = Form(None),
-    date_of_birth: Optional[str] = Form(None),
-    gender: Optional[str] = Form(None),
-    nationality: Optional[str] = Form(None),
-    id_number: Optional[str] = Form(None),
-    image: Optional[UploadFile] = File(None),
-    # Multi-angle images
-    image_front: Optional[UploadFile] = File(None),
-    image_left: Optional[UploadFile] = File(None),
-    image_right: Optional[UploadFile] = File(None),
-    image_up: Optional[UploadFile] = File(None),
-    image_down: Optional[UploadFile] = File(None),
-):
+async def register_user(form_data: RegistrationFormData = Depends()):
     """
     Register a new user with face image(s) and personal information.
     Supports both single image and multi-angle face capture.
     """
-    supabase = get_supabase_service()
-    face_service = get_face_service()
+    # Create request object
+    request = RegistrationRequest(
+        name=form_data.name,
+        email=form_data.email,
+        password=form_data.password,
+        phone=form_data.phone,
+        date_of_birth=form_data.date_of_birth,
+        gender=form_data.gender,
+        nationality=form_data.nationality,
+        id_number=form_data.id_number
+    )
     
-    try:
-        # Input Validation & Sanitization
-        try:
-            name = sanitize_text(name)
-            if not name:
-                raise ValidationError("Name is required")
-                
-            email = normalize_email(email)
-            validate_password(password)
-            phone = validate_phone(phone)
-            
-            # Optional fields sanitization
-            date_of_birth = sanitize_text(date_of_birth)
-            gender = sanitize_text(gender)
-            nationality = sanitize_text(nationality)
-            id_number = sanitize_text(id_number)
-            
-        except ValidationError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+    # Collect images
+    face_images = {
+        'image': form_data.image,
+        'image_front': form_data.image_front,
+        'image_left': form_data.image_left,
+        'image_right': form_data.image_right,
+        'image_up': form_data.image_up,
+        'image_down': form_data.image_down
+    }
 
-        # Check if user already exists
-        existing = supabase.client.table('users').select('id').eq('email', email).execute()
-        if existing.data:
-            raise HTTPException(status_code=409, detail="User with this email already exists")
-        
-        # Hash password
-        password_hash = hash_password(password)
-        
-        # Collect face images
-        face_images = await collect_face_images(
-            image, image_front, image_left, image_right, image_up, image_down
-        )
-        
-        if not face_images:
-            raise HTTPException(status_code=400, detail="At least one face image is required")
-        
-        # Process face images to get average encoding
-        try:
-            avg_encoding = face_service.process_face_images(face_images)
-        except FaceRecognitionError as e:
-            raise HTTPException(status_code=400, detail=str(e))
-
-        # Check for duplicate face registration
-        match_result = face_service.find_match(avg_encoding)
-        if match_result.matched:
-             raise HTTPException(
-                 status_code=409, 
-                 detail="This face is already registered to another user."
-             )
-        
-        face_encoding_json = json.dumps(avg_encoding)
-        
-        # Create user in database
-        user_data = {
-            "name": name,
-            "email": email,
-            "phone": phone,
-            "password_hash": password_hash,
-            "date_of_birth": date_of_birth,
-            "gender": gender,
-            "nationality": nationality,
-            "id_number": id_number,
-            "face_encoding": face_encoding_json
-        }
-        
-        response = supabase.client.table('users').insert(user_data).execute()
-        
-        if not response.data:
-            raise HTTPException(status_code=500, detail="Failed to create user")
-        
-        user_id = response.data[0]['id']
-        
-        # Save encoding to local face service storage for fast matching
-        try:
-            face_service.save_encoding(
-                user_id=user_id,
-                encoding=avg_encoding,
-                user_data={"name": name, "email": email}
-            )
-        except Exception as e:
-            print(f"Warning: Failed to save encoding to local storage: {str(e)}")
-        
-        # Upload face images to storage
-        upload_face_images(supabase, user_id, face_images)
-        
-        return {
-            "success": True,
-            "user_id": user_id,
-            "message": "Registration successful"
-        }
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+    # Delegate business logic to user_service
+    return await register_new_user(request, face_images)

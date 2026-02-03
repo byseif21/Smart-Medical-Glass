@@ -3,25 +3,15 @@ import re
 import json
 from fastapi import UploadFile, HTTPException
 from services.storage_service import get_supabase_service
-from services.face_service import get_face_service, FaceRecognitionError, collect_face_images
+from services.face_service import get_face_service, FaceRecognitionError, collect_face_images, upload_face_images
 from services.security import hash_password
 from utils.validation import normalize_email, sanitize_text, validate_password, validate_phone, ValidationError
 
-def register_new_user(
-    name: str,
-    email: str,
-    password: str,
-    phone: Optional[str] = None,
-    date_of_birth: Optional[str] = None,
-    gender: Optional[str] = None,
-    nationality: Optional[str] = None,
-    id_number: Optional[str] = None,
-    image: Optional[UploadFile] = None,
-    image_front: Optional[UploadFile] = None,
-    image_left: Optional[UploadFile] = None,
-    image_right: Optional[UploadFile] = None,
-    image_up: Optional[UploadFile] = None,
-    image_down: Optional[UploadFile] = None,
+from models.user import RegistrationRequest
+
+async def register_new_user(
+    request: RegistrationRequest,
+    face_images_dict: Dict[str, UploadFile]
 ) -> Dict[str, Any]:
     """
     Register a new user with validation, face processing, and database creation.
@@ -29,42 +19,196 @@ def register_new_user(
     supabase = get_supabase_service()
     face_service = get_face_service()
     
-    # Input Validation & Sanitization
+    # Input Validation & Sanitization (Already partially handled by Pydantic, but explicit checks remain)
     try:
-        name = sanitize_text(name)
-        if not name:
-            raise ValidationError("Name is required")
-            
-        email = normalize_email(email)
-        validate_password(password)
-        phone = validate_phone(phone)
-        
-        # Optional fields sanitization
-        date_of_birth = sanitize_text(date_of_birth)
-        gender = sanitize_text(gender)
-        nationality = sanitize_text(nationality)
-        id_number = sanitize_text(id_number)
+        # Re-validate critical logic if needed, but Pydantic handles basics.
+        # Check password complexity explicitly if not in model
+        validate_password(request.password)
         
     except ValidationError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
     # Check if user already exists
-    existing = supabase.client.table('users').select('id').eq('email', email).execute()
+    existing = supabase.client.table('users').select('id').eq('email', request.email).execute()
     if existing.data:
         raise HTTPException(status_code=409, detail="User with this email already exists")
     
     # Hash password
-    password_hash = hash_password(password)
+    password_hash = hash_password(request.password)
     
     # Collect face images
-    face_images = collect_face_images(
-        image, image_front, image_left, image_right, image_up, image_down
-    ) # Note: this is an async function in router, but face_service definition needs check
-    # Wait, collect_face_images in registration.py was awaited: "await collect_face_images(...)"
-    # I need to check if collect_face_images is async.
+    face_images = await collect_face_images(face_images_dict)
     
-    # ... logic continues ...
+    if not face_images:
+        raise HTTPException(status_code=400, detail="At least one face image is required")
+    
+    # Process face images to get average encoding
+    try:
+        avg_encoding = face_service.process_face_images(face_images)
+    except FaceRecognitionError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
+    # Check for duplicate face registration
+    match_result = face_service.find_match(avg_encoding)
+    if match_result.matched:
+            raise HTTPException(
+                status_code=409, 
+                detail="This face is already registered to another user."
+            )
+    
+    # Create user in database
+    try:
+        new_user = await _create_user_entry(supabase, request, password_hash, avg_encoding, face_images)
+        return new_user
+    except Exception as e:
+        # If user creation fails, we should ideally rollback, but Supabase atomic transactions 
+        # via API are limited. For now, we propagate the error.
+        raise HTTPException(status_code=500, detail=f"Failed to create user: {str(e)}")
 
+async def _create_user_entry(
+    supabase, 
+    request: RegistrationRequest, 
+    password_hash: str, 
+    face_encoding: List[float],
+    face_images: Dict[str, bytes]
+) -> Dict[str, Any]:
+    """Helper to create user record and upload images."""
+    face_encoding_json = json.dumps(face_encoding)
+    
+    user_data = {
+        "name": request.name,
+        "email": request.email,
+        "phone": request.phone,
+        "password_hash": password_hash,
+        "date_of_birth": request.date_of_birth,
+        "gender": request.gender,
+        "nationality": request.nationality,
+        "id_number": request.id_number,
+        "face_encoding": face_encoding_json
+    }
+    
+    response = supabase.client.table('users').insert(user_data).execute()
+    new_user = response.data[0]
+    user_id = new_user['id']
+    
+    # Upload face images
+    try:
+        upload_face_images(user_id, face_images)
+    except Exception as e:
+        print(f"Error uploading images: {e}")
+        # Non-critical error, proceed
+        
+    return new_user
+
+def get_users_paginated(
+    page: int = 1,
+    page_size: int = 20,
+    query_str: Optional[str] = None,
+    role_filter: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Get paginated users list with optional search and role filter.
+    Returns: { "users": [...], "total": int }
+    """
+    supabase = get_supabase_service()
+    
+    if query_str:
+        return _get_search_results(supabase, query_str, role_filter, page, page_size)
+    else:
+        return _get_standard_results(supabase, role_filter, page, page_size)
+
+def _get_search_results(supabase, query_str: str, role_filter: Optional[str], page: int, page_size: int) -> Dict[str, Any]:
+    # Search by name
+    query_name = supabase.client.table('users').select('*').ilike('name', f'%{query_str}%')
+    if role_filter:
+        query_name = query_name.eq('role', role_filter)
+    name_results = query_name.execute()
+    
+    # Search by email
+    query_email = supabase.client.table('users').select('*').ilike('email', f'%{query_str}%')
+    if role_filter:
+        query_email = query_email.eq('role', role_filter)
+    email_results = query_email.execute()
+    
+    # Merge results
+    all_users_map = {}
+    for u in (name_results.data or []):
+        all_users_map[u['id']] = u
+    for u in (email_results.data or []):
+        all_users_map[u['id']] = u
+        
+    users_data = list(all_users_map.values())
+    
+    # Sort
+    users_data.sort(key=lambda x: x.get('created_at', ''), reverse=True)
+    
+    # Pagination
+    total = len(users_data)
+    start_idx = (page - 1) * page_size
+    end_idx = start_idx + page_size
+    paginated_users = users_data[start_idx:end_idx]
+    
+    return {"users": paginated_users, "total": total}
+
+def _get_standard_results(supabase, role_filter: Optional[str], page: int, page_size: int) -> Dict[str, Any]:
+    query = supabase.client.table('users').select('*', count='exact')
+    
+    if role_filter:
+        query = query.eq('role', role_filter)
+        
+    query = query.order('created_at', desc=True)
+    query = query.range((page - 1) * page_size, page * page_size - 1)
+    
+    result = query.execute()
+    return {"users": result.data, "total": result.count}
+
+
+
+def _search_by_name(supabase, query: str) -> List[Dict[str, Any]]:
+    try:
+        res = supabase.client.table('users').select('id, name, email').ilike('name', f'%{query}%').limit(50).execute()
+        return res.data or []
+    except Exception as e:
+        print(f"Name search error: {e}")
+        return []
+
+def _search_by_email(supabase, query: str) -> List[Dict[str, Any]]:
+    try:
+        res = supabase.client.table('users').select('id, name, email').ilike('email', f'%{query}%').limit(50).execute()
+        return res.data or []
+    except Exception as e:
+        print(f"Email search error: {e}")
+        return []
+
+def _search_by_id(supabase, query: str) -> List[Dict[str, Any]]:
+    clean_hex = query.replace('-', '')
+    if not (re.match(r'^[0-9a-f]+$', clean_hex) and len(clean_hex) <= 32):
+        return []
+        
+    def to_uuid(hex_s):
+        return f"{hex_s[:8]}-{hex_s[8:12]}-{hex_s[12:16]}-{hex_s[16:20]}-{hex_s[20:]}"
+
+    try:
+        # Exact Match
+        if len(clean_hex) == 32:
+            target_id = to_uuid(clean_hex)
+            res = supabase.client.table('users').select('id, name, email').eq('id', target_id).execute()
+            return res.data or []
+        
+        # Prefix Search
+        else:
+            start_uuid = to_uuid(clean_hex.ljust(32, '0'))
+            end_uuid = to_uuid(clean_hex.ljust(32, 'f'))
+            
+            res = supabase.client.table('users').select('id, name, email')\
+                .gte('id', start_uuid)\
+                .lte('id', end_uuid)\
+                .limit(50).execute()
+            return res.data or []
+            
+    except Exception as e:
+        print(f"ID search error: {e}")
+        return []
 
 def search_users_db(query: str, current_user_id: Optional[str] = None, limit: int = 20) -> List[Dict[str, Any]]:
     """
@@ -79,55 +223,15 @@ def search_users_db(query: str, current_user_id: Optional[str] = None, limit: in
 
     all_users = {}
 
-    # 1. Search by name (case-insensitive)
-    try:
-        name_results = supabase.client.table('users').select('id, name, email').ilike('name', f'%{clean_query}%').limit(50).execute()
-        if name_results.data:
-            for user in name_results.data:
-                all_users[user['id']] = user
-    except Exception as e:
-        print(f"Name search error: {e}")
-
-    # 2. Search by email (case-insensitive)
-    try:
-        email_results = supabase.client.table('users').select('id, name, email').ilike('email', f'%{clean_query}%').limit(50).execute()
-        if email_results.data:
-            for user in email_results.data:
-                all_users[user['id']] = user
-    except Exception as e:
-        print(f"Email search error: {e}")
-
-    # 3. Search by ID (Exact or Prefix)
-    try:
-        clean_hex = clean_query.replace('-', '')
-        # Only attempt ID search if query contains only hex characters and is valid length
-        if re.match(r'^[0-9a-f]+$', clean_hex) and len(clean_hex) <= 32:
-            
-            def to_uuid(hex_s):
-                """Helper to format 32-char hex into UUID string"""
-                return f"{hex_s[:8]}-{hex_s[8:12]}-{hex_s[12:16]}-{hex_s[16:20]}-{hex_s[20:]}"
-
-            # Strategy A: Exact Match (Fastest)
-            if len(clean_hex) == 32:
-                target_id = to_uuid(clean_hex)
-                res = supabase.client.table('users').select('id, name, email').eq('id', target_id).execute()
-                if res.data:
-                    for u in res.data: all_users[u['id']] = u
-            
-            # Strategy B: Prefix Search (Range Query)
-            else:
-                start_uuid = to_uuid(clean_hex.ljust(32, '0'))
-                end_uuid = to_uuid(clean_hex.ljust(32, 'f'))
-                
-                res = supabase.client.table('users').select('id, name, email')\
-                    .gte('id', start_uuid)\
-                    .lte('id', end_uuid)\
-                    .limit(50).execute()
-                if res.data:
-                    for u in res.data: all_users[u['id']] = u
-
-    except Exception as e:
-        print(f"ID search error: {e}")
+    # Execute search strategies
+    for user in _search_by_name(supabase, clean_query):
+        all_users[user['id']] = user
+        
+    for user in _search_by_email(supabase, clean_query):
+        all_users[user['id']] = user
+        
+    for user in _search_by_id(supabase, clean_query):
+        all_users[user['id']] = user
     
     # Filter out current user and limit results
     users_list = [

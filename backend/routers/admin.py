@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel
 from typing import List, Optional
-from services.storage_service import get_supabase_service
+from dataclasses import dataclass
+from services.user_service import get_users_paginated
 from dependencies import get_current_user
 from utils.config import get_config
 
@@ -9,6 +10,13 @@ router = APIRouter(prefix="/api/users", tags=["admin"])
 settings = get_config()
 
 # --- Admin Models ---
+
+@dataclass
+class UserListParams:
+    page: int = Query(1, ge=1)
+    page_size: int = Query(20, ge=1, le=100)
+    q: Optional[str] = Query(None, description="Search by name or email")
+    role: Optional[str] = Query(None, description="Filter by role")
 
 class UserAdminView(BaseModel):
     id: str
@@ -40,87 +48,38 @@ def get_current_admin_user(current_user: dict = Depends(get_current_user)):
 
 @router.get("/", response_model=AdminUserListResponse)
 async def list_users_admin(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
-    q: str = Query(None, description="Search by name or email"),
-    role: str = Query(None, description="Filter by role"),
+    params: UserListParams = Depends(),
     current_user: dict = Depends(get_current_admin_user)
 ):
     """
     Admin: List all users with pagination and search.
     """
-    supabase = get_supabase_service()
+    # Delegate to service
+    result = get_users_paginated(
+        page=params.page,
+        page_size=params.page_size,
+        query_str=params.q,
+        role_filter=params.role
+    )
     
-    try:
-        if q:
-            # If searching, we'll perform two separate queries and merge them
-            # This is more robust than using .or_() which varies by client version
-            
-            # 1. Search by name
-            query_name = supabase.client.table('users').select('*').ilike('name', f'%{q}%')
-            if role:
-                query_name = query_name.eq('role', role)
-            name_results = query_name.execute()
-            
-            # 2. Search by email
-            query_email = supabase.client.table('users').select('*').ilike('email', f'%{q}%')
-            if role:
-                query_email = query_email.eq('role', role)
-            email_results = query_email.execute()
-            
-            # Merge results (deduplicate by ID)
-            all_users_map = {}
-            for u in (name_results.data or []):
-                all_users_map[u['id']] = u
-            for u in (email_results.data or []):
-                all_users_map[u['id']] = u
-                
-            users_data = list(all_users_map.values())
-            
-            # Manual sorting (created_at desc)
-            users_data.sort(key=lambda x: x.get('created_at', ''), reverse=True)
-            
-            # Manual pagination
-            total = len(users_data)
-            start_idx = (page - 1) * page_size
-            end_idx = start_idx + page_size
-            users_data = users_data[start_idx:end_idx]
-            
-        else:
-            # Standard query for no search term
-            query = supabase.client.table('users').select('*', count='exact')
-            
-            if role:
-                query = query.eq('role', role)
-                
-            query = query.order('created_at', desc=True)
-            query = query.range((page - 1) * page_size, page * page_size - 1)
-            
-            result = query.execute()
-            users_data = result.data
-            total = result.count if result.count is not None else len(users_data)
-        
-        users = []
-        for u in users_data:
-            users.append(UserAdminView(
-                id=u['id'],
-                name=u.get('name', 'Unknown'),
-                email=u.get('email', 'Unknown'),
-                role=u.get('role', 'user'),
-                created_at=u.get('created_at'),
-                last_login=u.get('last_sign_in_at')
-            ))
-            
-        return {
-            "users": users,
-            "total": total,
-            "page": page,
-            "page_size": page_size
-        }
-        
-    except Exception as e:
-        print(f"Admin list users error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    # Map to response model
+    users = [
+        UserAdminView(
+            id=u['id'],
+            name=u['name'],
+            email=u['email'],
+            role=u.get('role', 'user'),
+            created_at=u.get('created_at'),
+            last_login=u.get('last_login')
+        ) for u in result['users']
+    ]
+    
+    return AdminUserListResponse(
+        users=users,
+        total=result['total'],
+        page=params.page,
+        page_size=params.page_size
+    )
 
 @router.delete("/{user_id}")
 async def delete_user_admin(
