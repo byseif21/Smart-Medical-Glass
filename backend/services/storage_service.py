@@ -9,7 +9,7 @@ from supabase import create_client, Client
 import uuid
 
 from utils.config import config
-from models.user import UserCreate, UserResponse
+from models.user import UserCreate, UserResponse, UserSearchFilters
 from models.face_encoding import FaceEncoding
 
 
@@ -344,18 +344,22 @@ class SupabaseService:
             
         return query_obj.order('created_at', desc=True)
 
-    def search_users(self, query_str: str, role: Optional[str] = None, exclude_id: Optional[str] = None, 
-                     page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+    def search_users(self, filters: UserSearchFilters) -> Dict[str, Any]:
         """
-        Search users with pagination.
+        Search users with pagination using a filters object.
         
+        Args:
+            filters: Search criteria and pagination settings
+            
         Returns:
             Dict with "users" list and "total" count
         """
         try:
             query = self.client.table('users').select('*', count='exact')
-            query = self._build_search_query(query, query_str, role, exclude_id)
+            query = self._build_search_query(query, filters.query, filters.role, filters.exclude_id)
             
+            page = filters.page
+            page_size = filters.page_size
             query = query.range((page - 1) * page_size, page * page_size - 1)
             
             result = query.execute()

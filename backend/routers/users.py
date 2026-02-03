@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import List, Optional
-from services.search_service import get_users_paginated, UserSearchFilters
+from services.search_service import get_users_paginated
+from models.user import UserSearchFilters
 from services.connection_service import ConnectionService
 from utils.config import get_config
 

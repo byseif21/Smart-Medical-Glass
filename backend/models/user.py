@@ -101,3 +101,12 @@ class ErrorResponse(BaseModel):
                 }
             }
         }
+
+
+class UserSearchFilters(BaseModel):
+    """Filters for user search operations."""
+    query: Optional[str] = None
+    role: Optional[str] = None
+    exclude_id: Optional[str] = None
+    page: int = 1
+    page_size: int = 20

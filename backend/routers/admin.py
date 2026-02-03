@@ -2,7 +2,8 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel
 from typing import List, Optional
 from dataclasses import dataclass
-from services.search_service import get_users_paginated, UserSearchFilters
+from services.search_service import get_users_paginated
+from models.user import UserSearchFilters
 from dependencies import get_current_user
 from utils.config import get_config
 
