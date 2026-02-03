@@ -1,11 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from pydantic import BaseModel, field_validator
 from typing import List, Optional, Dict, Any
-import json
 from services.storage_service import get_supabase_service
 from services.profile_picture_service import get_profile_picture_url, save_profile_picture, ProfilePictureError
 from services.contact_service import get_emergency_contacts
-from services.face_service import get_face_service, FaceRecognitionError, upload_face_images, collect_face_images
+from services.face_service import get_face_service, FaceRecognitionError, collect_face_images
 from services.security import verify_password
 from dependencies import get_current_user, verify_user_access
 from utils.validation import sanitize_text, validate_phone
@@ -317,31 +316,11 @@ async def update_face_enrollment(
         if not face_images:
             raise HTTPException(status_code=400, detail="At least one face image is required")
 
-        # Process face images to get average encoding
+        # Delegate enrollment to service
         try:
-            avg_encoding = face_service.process_face_images(face_images)
+            await face_service.enroll_user(user_id, face_images, supabase)
         except FaceRecognitionError as e:
             raise HTTPException(status_code=400, detail=str(e))
-        
-        face_encoding_json = json.dumps(avg_encoding)
-
-        # Update user record
-        response = supabase.client.table('users').update({
-            "face_encoding": face_encoding_json
-        }).eq('id', user_id).execute()
-
-        # Update local face service
-        try:
-            face_service.save_encoding(
-                user_id=user_id,
-                encoding=avg_encoding,
-                user_data={"name": user['name'], "email": user['email']}
-            )
-        except Exception as e:
-            print(f"Warning: Failed to update local encoding: {str(e)}")
-
-        # Update storage images (overwrite/add new ones)
-        upload_face_images(supabase, user_id, face_images)
 
         return {"message": "Face enrollment updated successfully"}
 

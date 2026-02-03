@@ -218,85 +218,60 @@ class FaceRecognitionService:
     def find_match(self, encoding: List[float]) -> FaceMatch:
         """
         Find matching face in stored encodings.
-        
-        Args:
-            encoding: Face encoding vector to match
-            
-        Returns:
-            FaceMatch object with match result
         """
         try:
-            try:
-                import face_recognition as fr
-            except ImportError:
-                return FaceMatch(
-                    matched=False,
-                    user_id=None,
-                    confidence=None,
-                    distance=None
-                )
-            # Load all stored encodings
-            stored_encodings = self.load_encodings()
-            
-            if not stored_encodings:
-                return FaceMatch(
-                    matched=False,
-                    user_id=None,
-                    confidence=None,
-                    distance=None
-                )
-            
-            # Convert encoding to numpy array
+            import face_recognition as fr
             import numpy as np
+        except ImportError:
+            return FaceMatch(matched=False, user_id=None, confidence=None, distance=None)
+
+        stored_encodings = self.load_encodings()
+        if not stored_encodings:
+            return FaceMatch(matched=False, user_id=None, confidence=None, distance=None)
+
+        # Prepare data
+        try:
             encoding_array = np.array(encoding)
-            
-            # Prepare arrays for comparison
             known_encodings = [np.array(enc.encoding) for enc in stored_encodings]
-            
-            # Compare faces
-            matches = fr.compare_faces(
-                known_encodings,
-                encoding_array,
-                tolerance=self.tolerance
-            )
-            
-            # Calculate face distances
+
+            # Calculate distances (vectorized operation is faster)
             face_distances = fr.face_distance(known_encodings, encoding_array)
             
             # Find best match
-            best_match_index = None
-            best_distance = float('inf')
-            
-            # Find the absolute best match first (ignoring tolerance for now)
-            for i, distance in enumerate(face_distances):
-                if distance < best_distance:
-                    best_distance = distance
-                    best_match_index = i
-            
-            # Check if the best match is within tolerance
-            if best_match_index is not None and best_distance <= self.tolerance:
-                matched_encoding = stored_encodings[best_match_index]
-                # Confidence = 1 - distance (Linear confidence)
-                confidence = max(0.0, min(1.0, 1.0 - best_distance))
-                
-                return FaceMatch(
-                    matched=True,
-                    user_id=matched_encoding.user_id,
-                    confidence=confidence,
-                    distance=float(best_distance)
-                )
-            else:
-                # Return the best candidate even if not matched, but marked as matched=False
-                # This helps debugging or "near match" logic if needed
-                return FaceMatch(
-                    matched=False,
-                    user_id=stored_encodings[best_match_index].user_id if best_match_index is not None else None,
-                    confidence=max(0.0, min(1.0, 1.0 - best_distance)) if best_distance != float('inf') else 0.0,
-                    distance=float(best_distance) if best_distance != float('inf') else None
-                )
-                
+            best_match_index = np.argmin(face_distances)
+            best_distance = face_distances[best_match_index]
+
+            # Determine if it's a match
+            is_match = best_distance <= self.tolerance
+            confidence = max(0.0, min(1.0, 1.0 - best_distance))
+
+            return FaceMatch(
+                matched=bool(is_match),
+                user_id=stored_encodings[best_match_index].user_id if stored_encodings else None,
+                confidence=float(confidence),
+                distance=float(best_distance)
+            )
         except Exception as e:
+            logger.error(f"Face matching calculation failed: {e}")
             raise FaceRecognitionError(f"Face matching failed: {str(e)}")
+
+    async def enroll_user(self, user_id: str, images: Dict[str, bytes], supabase) -> None:
+        """
+        Full enrollment process: process images, save encoding, and upload images.
+        """
+        # 1. Process images to get average encoding
+        avg_encoding = self.process_face_images(images)
+
+        # 2. Save encoding to DB
+        # This updates the users table with the new encoding
+        self.save_encoding(user_id, avg_encoding, {})
+
+        # 3. Upload images to storage
+        # We call the standalone function or logic here. 
+        # Ideally, we move the upload logic into this class or keep using the helper.
+        # Since upload_face_images is outside, we call it.
+        upload_face_images(supabase, user_id, images)
+
 
     def compare_faces(self, encoding1: List[float], encoding2: List[float]) -> float:
         """
@@ -342,22 +317,14 @@ class FaceRecognitionService:
     def process_face_images(self, images: Dict[str, bytes]) -> List[float]:
         """
         Process multiple face images, extract encodings, and calculate average.
-        
-        Args:
-            images: Dictionary of angle -> image bytes
-            
-        Returns:
-            List[float]: Average face encoding
-            
-        Raises:
-            FaceRecognitionError: If processing fails or no faces detected
         """
-        try:
-            if not images:
-                raise FaceRecognitionError("No images provided")
+        if not images:
+            raise FaceRecognitionError("No images provided")
 
-            encodings = []
-            errors = []
+        encodings = []
+        errors = []
+        
+        try:
             for angle, image_data in images.items():
                 result = self.extract_encoding(image_data)
                 if result.success and result.encoding is not None:
@@ -502,30 +469,29 @@ def upload_face_images(supabase, user_id: str, images: Dict[str, bytes]) -> None
 
 
 async def collect_face_images(
-    images_dict: Dict[str, Optional[UploadFile]]
+    image: Optional[UploadFile] = None,
+    image_front: Optional[UploadFile] = None,
+    image_left: Optional[UploadFile] = None,
+    image_right: Optional[UploadFile] = None,
+    image_up: Optional[UploadFile] = None,
+    image_down: Optional[UploadFile] = None
 ) -> Dict[str, bytes]:
     """
     Collect and read bytes from uploaded face images.
-    
-    Args:
-        images_dict: Dictionary mapping keys (image, image_front, etc.) to UploadFile objects
-        
-    Returns:
-        Dictionary mapping angle to image bytes
     """
     face_images = {}
     
-    mapping = {
-        'image': 'front',
-        'image_front': 'front',
-        'image_left': 'left',
-        'image_right': 'right',
-        'image_up': 'up',
-        'image_down': 'down'
+    # Map input args to angle names
+    # Priority: image_front > image (legacy)
+    inputs = {
+        'front': image_front or image,
+        'left': image_left,
+        'right': image_right,
+        'up': image_up,
+        'down': image_down
     }
 
-    for input_key, angle in mapping.items():
-        file_obj = images_dict.get(input_key)
+    for angle, file_obj in inputs.items():
         if file_obj:
             face_images[angle] = await file_obj.read()
             
