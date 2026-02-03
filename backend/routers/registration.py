@@ -34,26 +34,27 @@ class RegistrationFormData:
             'image_down': self.image_down
         }
 
+    def to_registration_request(self) -> RegistrationRequest:
+        """Convert form data to RegistrationRequest model."""
+        return RegistrationRequest(
+            name=self.name,
+            email=self.email,
+            password=self.password,
+            phone=self.phone,
+            date_of_birth=self.date_of_birth,
+            gender=self.gender,
+            nationality=self.nationality,
+            id_number=self.id_number
+        )
+
 @router.post("/register")
 async def register_user(form_data: RegistrationFormData = Depends()):
     """
     Register a new user with face image(s) and personal information.
     Supports both single image and multi-angle face capture.
     """
-    # Create request object
-    request = RegistrationRequest(
-        name=form_data.name,
-        email=form_data.email,
-        password=form_data.password,
-        phone=form_data.phone,
-        date_of_birth=form_data.date_of_birth,
-        gender=form_data.gender,
-        nationality=form_data.nationality,
-        id_number=form_data.id_number
-    )
-    
-    # Collect images
-    face_images = form_data.to_image_dict()
-
     # Delegate business logic to user_service
-    return await register_new_user(request, face_images)
+    return await register_new_user(
+        form_data.to_registration_request(), 
+        form_data.to_image_dict()
+    )
