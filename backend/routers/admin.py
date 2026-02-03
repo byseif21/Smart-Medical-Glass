@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel
 from typing import List, Optional
 from dataclasses import dataclass
-from services.user_service import get_users_paginated
+from services.search_service import get_users_paginated
 from dependencies import get_current_user
 from utils.config import get_config
 
