@@ -57,7 +57,7 @@ def validate_password(password: str, min_length: int = 8) -> str:
         
     return password
 
-def _check_password_complexity(password: str):
+def _check_password_complexity(password: str) -> None:
     """
     Check if password meets complexity requirements.
     Raises ValidationError if requirements are not met.

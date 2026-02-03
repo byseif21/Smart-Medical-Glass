@@ -29,7 +29,11 @@ class AuthService:
         """Generate standard authentication response with token"""
         role = user.get('role') or 'user'
         token = self.create_access_token({"sub": user['id'], "email": user['email'], "role": role})
-        
+
+        # NOTE: Both "id" and "user_id" are returned intentionally.
+        # - "id" is the canonical field name for new clients.
+        # - "user_id" is kept for backward compatibility with existing clients and is deprecated.
+        #   Do not remove "user_id" without a coordinated API deprecation/migration. 
         return {
             "id": user['id'],
             "user_id": user['id'],

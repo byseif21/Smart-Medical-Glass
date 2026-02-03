@@ -174,7 +174,8 @@ def delete_user_fully(user_id: str) -> bool:
 async def get_complete_user_profile(
     user_id: str,
     current_user_id: Optional[str],
-    role: str
+    role: str,
+    connection_service: Optional[ConnectionService] = None
 ) -> Dict[str, Any]:
     """
     Get complete user profile including medical info, relatives, and profile picture URL.
@@ -209,8 +210,8 @@ async def get_complete_user_profile(
         medical_info = medical_response.data[0] if medical_response.data else {}
         
         # Use ConnectionService for contacts
-        # TODO: Inject this dependency to improve testability and performance
-        connection_service = ConnectionService()
+        if connection_service is None:
+            connection_service = ConnectionService()
         emergency_contacts = connection_service.get_emergency_contacts(user_id)
 
         response_payload["medical_info"] = medical_info
