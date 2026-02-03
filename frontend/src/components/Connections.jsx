@@ -180,8 +180,8 @@ const Connections = ({ targetUserId }) => {
     error,
     successMessage,
     userId,
-    handleAcceptRequest,
-    handleRejectRequest,
+    acceptRequest,
+    rejectRequest,
     addConnection,
     updateContact,
     removeConnection,
@@ -265,8 +265,8 @@ const Connections = ({ targetUserId }) => {
 
       <PendingRequestsList
         requests={pendingRequests}
-        onAccept={handleAcceptRequest}
-        onReject={handleRejectRequest}
+        onAccept={acceptRequest}
+        onReject={rejectRequest}
       />
 
       <ConnectionsSection
