@@ -50,7 +50,12 @@ class RegistrationRequest(BaseModel):
     """Model for registration request data (excluding image file)."""
     name: str = Field(..., min_length=1, max_length=255)
     email: EmailType
+    password: str = Field(..., min_length=6)
     phone: Optional[str] = Field(None, max_length=50)
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
+    nationality: Optional[str] = None
+    id_number: Optional[str] = None
 
     @field_validator('name')
     def validate_name(cls, v):
