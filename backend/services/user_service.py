@@ -209,6 +209,7 @@ async def get_complete_user_profile(
         medical_info = medical_response.data[0] if medical_response.data else {}
         
         # Use ConnectionService for contacts
+        # TODO: Inject this dependency to improve testability and performance
         connection_service = ConnectionService()
         emergency_contacts = connection_service.get_emergency_contacts(user_id)
 
