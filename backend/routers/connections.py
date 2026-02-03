@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Header, Depends
 from typing import List, Optional, Annotated
 from services.connection_service import ConnectionService
+from dependencies import get_current_user
 from models.connections import (
     CreateLinkedConnectionRequest,
     CreateExternalContactRequest,
@@ -16,10 +17,12 @@ from models.connections import (
 
 router = APIRouter(prefix="/api/connections", tags=["connections"])
 
-def get_current_user_id(x_user_id: str = Header(None, alias="X-User-ID")) -> str:
-    if not x_user_id:
-        raise HTTPException(status_code=401, detail="User ID is required. Please log in again.")
-    return x_user_id
+def get_current_user_id(current_user: dict = Depends(get_current_user)) -> str:
+    """
+    Extract user ID from validated JWT token.
+    Replaces insecure header-based extraction.
+    """
+    return current_user["sub"]
 
 def get_connection_service() -> ConnectionService:
     return ConnectionService()
@@ -106,8 +109,8 @@ async def create_external_contact(
 
 @router.get("/", response_model=GetConnectionsResponse)
 async def get_all_connections(
-    current_user_id: UserDep,
-    service: ServiceDep,
+    current_user: dict = Depends(get_current_user),
+    service: ServiceDep = None, # ServiceDep default to handle non-default arg following default arg
     user_id: Optional[str] = None
 ):
     """
@@ -116,12 +119,17 @@ async def get_all_connections(
     - **user_id**: Optional ID to fetch connections for a specific user (admin/viewing mode).
                    If not provided, fetches connections for the current authenticated user.
     """
+    if service is None:
+        service = ConnectionService()
+
+    current_user_id = current_user["sub"]
     target_id = user_id if user_id else current_user_id
-    # TODO: Add permission check if target_id != current_user_id (e.g., only admin or self can view)
+    
+    # Permission check: Allow if self or admin
     if target_id != current_user_id:
-        # Currently we only allow users to view their own connections. 
-        # Admin access would require fetching user role which is not available in this scope yet.
-        raise HTTPException(status_code=403, detail="You can only view your own connections.")
+        role = current_user.get('role', 'user')
+        if role != 'admin':
+            raise HTTPException(status_code=403, detail="Admin privileges required to view other users' connections.")
         
     return await service.get_all_connections(target_id)
 
