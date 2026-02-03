@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import List, Optional
-from services.search_service import search_users_db
+from services.search_service import get_users_paginated, UserSearchFilters
 from services.connection_service import ConnectionService
 from utils.config import get_config
 
@@ -38,7 +38,14 @@ async def search_users(
         )
     
     # 1. Search users
-    users_list = search_users_db(q, current_user_id)
+    search_filters = UserSearchFilters(
+        page=1,
+        page_size=20,
+        query=q,
+        exclude_id=current_user_id
+    )
+    result = get_users_paginated(search_filters)
+    users_list = result['users']
     
     # 2. Enrich with connection status if current_user_id is provided
     user_statuses = {}

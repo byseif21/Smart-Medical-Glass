@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 import json
 from fastapi import UploadFile, HTTPException
 from services.storage_service import get_supabase_service
@@ -18,86 +18,87 @@ async def register_new_user(
     supabase = get_supabase_service()
     face_service = get_face_service()
     
-    # Input Validation & Sanitization (Already partially handled by Pydantic, but explicit checks remain)
+    # 1. Validate Input & Check Existence
+    _validate_registration(supabase, request)
+    
+    # 2. Process Face Data (Encoding & Duplication Check)
+    avg_encoding, face_images = await _process_face_data(face_service, face_images_dict)
+    
+    # 3. Create User & Upload Images
+    face_data = (avg_encoding, face_images)
+    return _persist_user_registration(supabase, request, face_data)
+
+def _validate_registration(supabase, request: RegistrationRequest):
+    """Validate password and check if user email already exists."""
     try:
-        # Re-validate critical logic if needed, but Pydantic handles basics.
-        # Check password complexity explicitly if not in model
         validate_password(request.password)
-        
     except ValidationError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    # Check if user already exists
     existing = supabase.client.table('users').select('id').eq('email', request.email).execute()
     if existing.data:
         raise HTTPException(status_code=409, detail="User with this email already exists")
-    
-    # Hash password
-    password_hash = hash_password(request.password)
-    
-    # Collect face images
+
+async def _process_face_data(
+    face_service, 
+    face_images_dict: Dict[str, UploadFile]
+) -> Tuple[List[float], Dict[str, bytes]]:
+    """Collect images, generate encoding, and check for face duplicates."""
     face_images = await collect_face_images(face_images_dict)
     
     if not face_images:
         raise HTTPException(status_code=400, detail="At least one face image is required")
     
-    # Process face images to get average encoding
     try:
         avg_encoding = face_service.process_face_images(face_images)
     except FaceRecognitionError as e:
         raise HTTPException(status_code=400, detail=str(e))
     
-    # Check for duplicate face registration
     match_result = face_service.find_match(avg_encoding)
     if match_result.matched:
-            raise HTTPException(
-                status_code=409, 
-                detail="This face is already registered to another user."
-            )
-    
-    # Create user in database
-    try:
-        new_user = await _create_user_entry(supabase, request, password_hash, avg_encoding, face_images)
-        return new_user
-    except Exception as e:
-        # If user creation fails, we should ideally rollback, but Supabase atomic transactions 
-        # via API are limited. For now, we propagate the error.
-        raise HTTPException(status_code=500, detail=f"Failed to create user: {str(e)}")
+        raise HTTPException(
+            status_code=409, 
+            detail="This face is already registered to another user."
+        )
+    return avg_encoding, face_images
 
-async def _create_user_entry(
+def _persist_user_registration(
     supabase, 
     request: RegistrationRequest, 
-    password_hash: str, 
-    face_encoding: List[float],
-    face_images: Dict[str, bytes]
+    face_data: Tuple[List[float], Dict[str, bytes]]
 ) -> Dict[str, Any]:
-    """Helper to create user record and upload images."""
-    face_encoding_json = json.dumps(face_encoding)
-    
-    user_data = {
-        "name": request.name,
-        "email": request.email,
-        "phone": request.phone,
-        "password_hash": password_hash,
-        "date_of_birth": request.date_of_birth,
-        "gender": request.gender,
-        "nationality": request.nationality,
-        "id_number": request.id_number,
-        "face_encoding": face_encoding_json
-    }
-    
-    response = supabase.client.table('users').insert(user_data).execute()
-    new_user = response.data[0]
-    user_id = new_user['id']
-    
-    # Upload face images
+    """Create user record and upload face images."""
+    avg_encoding, face_images = face_data
     try:
-        upload_face_images(user_id, face_images)
+        password_hash = hash_password(request.password)
+        face_encoding_json = json.dumps(avg_encoding)
+        user_data = {
+            "name": request.name,
+            "email": request.email,
+            "phone": request.phone,
+            "password_hash": password_hash,
+            "date_of_birth": request.date_of_birth,
+            "gender": request.gender,
+            "nationality": request.nationality,
+            "id_number": request.id_number,
+            "face_encoding": face_encoding_json
+        }
+
+        response = supabase.client.table('users').insert(user_data).execute()
+        new_user = response.data[0]
+        user_id = new_user['id']
+
+        try:
+             upload_face_images(supabase, user_id, face_images)
+        except Exception as e:
+             print(f"Error uploading images: {e}")
+
+        return new_user
+
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"Error uploading images: {e}")
-        # Non-critical error, proceed
-        
-    return new_user
+        raise HTTPException(status_code=500, detail=f"Failed to create user: {str(e)}")
 
 def delete_user_fully(user_id: str) -> bool:
     """

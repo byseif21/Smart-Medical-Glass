@@ -273,16 +273,24 @@ async def update_relatives(user_id: str, data: RelativesUpdate, current_user: di
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update relatives: {str(e)}")
 
+from dataclasses import dataclass
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
+
+@dataclass
+class FaceUploads:
+    """Dependency class to group face image uploads."""
+    image: Optional[UploadFile] = File(None)
+    image_front: Optional[UploadFile] = File(None)
+    image_left: Optional[UploadFile] = File(None)
+    image_right: Optional[UploadFile] = File(None)
+    image_up: Optional[UploadFile] = File(None)
+    image_down: Optional[UploadFile] = File(None)
+
 @router.post("/face/{user_id}")
 async def update_face_enrollment(
     user_id: str,
+    uploads: FaceUploads = Depends(),
     password: str = Form(...),
-    image: Optional[UploadFile] = File(None),
-    image_front: Optional[UploadFile] = File(None),
-    image_left: Optional[UploadFile] = File(None),
-    image_right: Optional[UploadFile] = File(None),
-    image_up: Optional[UploadFile] = File(None),
-    image_down: Optional[UploadFile] = File(None),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -310,7 +318,8 @@ async def update_face_enrollment(
 
         # Collect face images
         face_images = await collect_face_images(
-            image, image_front, image_left, image_right, image_up, image_down
+            uploads.image, uploads.image_front, uploads.image_left, 
+            uploads.image_right, uploads.image_up, uploads.image_down
         )
         
         if not face_images:

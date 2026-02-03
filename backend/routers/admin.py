@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel
 from typing import List, Optional
 from dataclasses import dataclass
-from services.search_service import get_users_paginated
+from services.search_service import get_users_paginated, UserSearchFilters
 from dependencies import get_current_user
 from utils.config import get_config
 
@@ -55,12 +55,13 @@ async def list_users_admin(
     Admin: List all users with pagination and search.
     """
     # Delegate to service
-    result = get_users_paginated(
+    search_filters = UserSearchFilters(
         page=params.page,
         page_size=params.page_size,
-        query_str=params.q,
-        role_filter=params.role
+        query=params.q,
+        role=params.role
     )
+    result = get_users_paginated(search_filters)
     
     # Map to response model
     users = [

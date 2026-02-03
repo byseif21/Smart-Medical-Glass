@@ -30,10 +30,10 @@ async def recognize_face(image: UploadFile = File(...), current_user: dict = Dep
         # Use service for matching
         match_result = face_service.find_match(result.encoding)
         
-        if match_result.matched and match_result.user_id:
-            return _handle_successful_match(match_result, current_user, supabase)
-        else:
-            return _handle_no_match(match_result)
+        if not match_result.matched or not match_result.user_id:
+             return _handle_no_match(match_result)
+
+        return _handle_successful_match(match_result, current_user, supabase)
     
     except HTTPException:
         raise
