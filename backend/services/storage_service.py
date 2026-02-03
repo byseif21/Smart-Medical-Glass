@@ -101,45 +101,50 @@ class SupabaseService:
             SupabaseError: If save operation fails or user already exists
         """
         try:
-            # Check if user with this email already exists
-            existing_user = self.client.table('users').select('*').eq('email', user_data.email).execute()
-            
-            if existing_user.data and len(existing_user.data) > 0:
-                raise SupabaseError(
-                    f"User with email {user_data.email} already exists"
-                )
-            
-            # Prepare user data for insertion
-            user_dict = {
-                "name": user_data.name,
-                "email": user_data.email,
-                "phone": user_data.phone,
-                "image_url": image_url,
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat()
-            }
-            
-            # Insert user into database
-            response = self.client.table('users').insert(user_dict).execute()
-            
-            if not response.data or len(response.data) == 0:
-                raise SupabaseError("Failed to insert user data")
-            
-            # Convert response to UserResponse model
-            user_record = response.data[0]
-            return UserResponse(
-                id=user_record['id'],
-                name=user_record['name'],
-                email=user_record['email'],
-                phone=user_record.get('phone'),
-                image_url=user_record.get('image_url'),
-                registered_at=datetime.fromisoformat(user_record['created_at'].replace('Z', '+00:00'))
-            )
+            self._ensure_user_not_exists(user_data.email)
+            user_dict = self._prepare_user_dict(user_data, image_url)
+            user_record = self._insert_user_record(user_dict)
+            return self._map_to_user_response(user_record)
             
         except SupabaseError:
             raise
         except Exception as e:
             raise SupabaseError(f"Failed to save user: {str(e)}")
+
+    def _ensure_user_not_exists(self, email: str) -> None:
+        """Check if user with given email already exists."""
+        existing_user = self.client.table('users').select('*').eq('email', email).execute()
+        if existing_user.data and len(existing_user.data) > 0:
+            raise SupabaseError(f"User with email {email} already exists")
+
+    def _prepare_user_dict(self, user_data: UserCreate, image_url: Optional[str]) -> Dict[str, Any]:
+        """Prepare user dictionary for database insertion."""
+        return {
+            "name": user_data.name,
+            "email": user_data.email,
+            "phone": user_data.phone,
+            "image_url": image_url,
+            "created_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.utcnow().isoformat()
+        }
+
+    def _insert_user_record(self, user_dict: Dict[str, Any]) -> Dict[str, Any]:
+        """Insert user record into database and return the result."""
+        response = self.client.table('users').insert(user_dict).execute()
+        if not response.data or len(response.data) == 0:
+            raise SupabaseError("Failed to insert user data")
+        return response.data[0]
+
+    def _map_to_user_response(self, user_record: Dict[str, Any]) -> UserResponse:
+        """Convert database record to UserResponse model."""
+        return UserResponse(
+            id=user_record['id'],
+            name=user_record['name'],
+            email=user_record['email'],
+            phone=user_record.get('phone'),
+            image_url=user_record.get('image_url'),
+            registered_at=datetime.fromisoformat(user_record['created_at'].replace('Z', '+00:00'))
+        )
     
     def get_user(self, user_id: str) -> Optional[UserResponse]:
         """
