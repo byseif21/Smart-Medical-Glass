@@ -100,6 +100,21 @@ const MainInfoForm = ({ formData, errors, isEditing, onChange }) => {
         </select>
         {errors.gender && <p className="text-sm text-red-500 mt-1">{errors.gender}</p>}
       </div>
+
+      <div>
+        <label className="label-medical">Government ID</label>
+        <input
+          type="text"
+          name="id_number"
+          value={formData.id_number}
+          onChange={onChange}
+          disabled={!isEditing}
+          className={`input-medical disabled:bg-medical-gray-50 disabled:cursor-not-allowed ${
+            errors.id_number ? 'border-red-500' : ''
+          }`}
+        />
+        {errors.id_number && <p className="text-sm text-red-500 mt-1">{errors.id_number}</p>}
+      </div>
     </div>
   );
 };
@@ -111,6 +126,7 @@ MainInfoForm.propTypes = {
     date_of_birth: PropTypes.string,
     nationality: PropTypes.string,
     gender: PropTypes.string,
+    id_number: PropTypes.string,
   }).isRequired,
   errors: PropTypes.object.isRequired,
   isEditing: PropTypes.bool.isRequired,
