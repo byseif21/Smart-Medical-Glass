@@ -85,7 +85,8 @@ class SupabaseService:
     def save_user(
         self,
         user_data: UserCreate,
-        image_url: Optional[str] = None
+        image_url: Optional[str] = None,
+        extra_data: Optional[Dict[str, Any]] = None
     ) -> UserResponse:
         """
         Save user data to Supabase users table.
@@ -93,6 +94,7 @@ class SupabaseService:
         Args:
             user_data: User information to save
             image_url: Optional URL to user's face image
+            extra_data: Optional dictionary of additional fields (e.g., password_hash, dob)
             
         Returns:
             UserResponse with saved user data including ID
@@ -102,7 +104,7 @@ class SupabaseService:
         """
         try:
             self._ensure_user_not_exists(user_data.email)
-            user_dict = self._prepare_user_dict(user_data, image_url)
+            user_dict = self._prepare_user_dict(user_data, image_url, extra_data)
             user_record = self._insert_user_record(user_dict)
             return self._map_to_user_response(user_record)
             
@@ -117,9 +119,14 @@ class SupabaseService:
         if existing_user.data and len(existing_user.data) > 0:
             raise SupabaseError(f"User with email {email} already exists")
 
-    def _prepare_user_dict(self, user_data: UserCreate, image_url: Optional[str]) -> Dict[str, Any]:
+    def _prepare_user_dict(
+        self, 
+        user_data: UserCreate, 
+        image_url: Optional[str],
+        extra_data: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """Prepare user dictionary for database insertion."""
-        return {
+        user_dict = {
             "name": user_data.name,
             "email": user_data.email,
             "phone": user_data.phone,
@@ -127,6 +134,11 @@ class SupabaseService:
             "created_at": datetime.utcnow().isoformat(),
             "updated_at": datetime.utcnow().isoformat()
         }
+        
+        if extra_data:
+            user_dict.update(extra_data)
+            
+        return user_dict
 
     def _insert_user_record(self, user_dict: Dict[str, Any]) -> Dict[str, Any]:
         """Insert user record into database and return the result."""
@@ -166,17 +178,35 @@ class SupabaseService:
                 return None
             
             user_record = response.data[0]
-            return UserResponse(
-                id=user_record['id'],
-                name=user_record['name'],
-                email=user_record['email'],
-                phone=user_record.get('phone'),
-                image_url=user_record.get('image_url'),
-                registered_at=datetime.fromisoformat(user_record['created_at'].replace('Z', '+00:00'))
-            )
+            return self._map_to_user_response(user_record)
             
         except Exception as e:
             raise SupabaseError(f"Failed to retrieve user: {str(e)}")
+
+    def update_user(self, user_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Update user data in Supabase.
+        
+        Args:
+            user_id: Unique user identifier
+            updates: Dictionary of fields to update
+            
+        Returns:
+            Updated user record (dict) if successful, None if user not found
+            
+        Raises:
+            SupabaseError: If update operation fails
+        """
+        try:
+            updates['updated_at'] = datetime.utcnow().isoformat()
+            response = self.client.table('users').update(updates).eq('id', user_id).execute()
+            
+            if not response.data or len(response.data) == 0:
+                return None
+                
+            return response.data[0]
+        except Exception as e:
+            raise SupabaseError(f"Failed to update user: {str(e)}")
     
     def save_face_encoding(
         self,

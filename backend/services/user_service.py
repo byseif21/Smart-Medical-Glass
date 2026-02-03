@@ -9,7 +9,7 @@ from services.contact_service import get_emergency_contacts
 from utils.validation import normalize_email, sanitize_text, validate_password, validate_phone, ValidationError
 from utils.privacy import apply_privacy_settings
 
-from models.user import RegistrationRequest
+from models.user import RegistrationRequest, UserCreate
 
 async def register_new_user(
     request: RegistrationRequest,
@@ -38,6 +38,9 @@ def _validate_registration(supabase, request: RegistrationRequest):
     except ValidationError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+    # Check existence using storage service logic if possible, but here we do it explicitly
+    # to throw specific 409 error before processing face data (which is expensive)
+    # actually, storage_service.save_user also checks this, but we want to fail fast.
     existing = supabase.client.table('users').select('id').eq('email', request.email).execute()
     if existing.data:
         raise HTTPException(status_code=409, detail="User with this email already exists")
@@ -75,10 +78,15 @@ def _persist_user_registration(
     try:
         password_hash = hash_password(request.password)
         face_encoding_json = json.dumps(avg_encoding)
-        user_data = {
-            "name": request.name,
-            "email": request.email,
-            "phone": request.phone,
+        
+        # Prepare data for storage service
+        user_create = UserCreate(
+            name=request.name,
+            email=request.email,
+            phone=request.phone
+        )
+        
+        extra_data = {
             "password_hash": password_hash,
             "date_of_birth": request.date_of_birth,
             "gender": request.gender,
@@ -87,16 +95,22 @@ def _persist_user_registration(
             "face_encoding": face_encoding_json
         }
 
-        response = supabase.client.table('users').insert(user_data).execute()
-        new_user = response.data[0]
-        user_id = new_user['id']
+        # Use storage service to save user
+        try:
+            user_response = supabase.save_user(user_create, extra_data=extra_data)
+        except Exception as e:
+            # Re-raise as HTTPException to match previous behavior
+            raise HTTPException(status_code=500, detail=str(e))
+            
+        user_id = user_response.id
 
         try:
              upload_face_images(supabase, user_id, face_images)
         except Exception as e:
              print(f"Error uploading images: {e}")
 
-        return new_user
+        # Return dictionary representation of the created user
+        return user_response.model_dump()
 
     except HTTPException:
         raise
@@ -207,12 +221,12 @@ async def update_user_privacy(user_id: str, update_data: Dict[str, Any]) -> Dict
         raise HTTPException(status_code=400, detail="No data provided for update")
     
     supabase = get_supabase_service()
-    response = supabase.client.table('users').update(update_data).eq('id', user_id).execute()
+    updated_user = supabase.update_user(user_id, update_data)
     
-    if not response.data:
+    if not updated_user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    return response.data[0]
+    return updated_user
 
 async def update_user_main_info(user_id: str, update_data: Dict[str, Any]) -> Dict[str, Any]:
     """Update user's main information."""
@@ -220,12 +234,12 @@ async def update_user_main_info(user_id: str, update_data: Dict[str, Any]) -> Di
         raise HTTPException(status_code=400, detail="No data provided for update")
     
     supabase = get_supabase_service()
-    response = supabase.client.table('users').update(update_data).eq('id', user_id).execute()
+    updated_user = supabase.update_user(user_id, update_data)
     
-    if not response.data:
+    if not updated_user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    return response.data[0]
+    return updated_user
 
 async def update_user_medical_info(user_id: str, update_data: Dict[str, Any]) -> Dict[str, Any]:
     """Update or insert user's medical information."""

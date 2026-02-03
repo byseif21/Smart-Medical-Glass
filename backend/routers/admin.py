@@ -98,8 +98,7 @@ async def delete_user_admin(
     
     try:
         # Check if user exists
-        check = supabase.client.table('users').select('id').eq('id', user_id).execute()
-        if not check.data:
+        if not supabase.get_user(user_id):
             raise HTTPException(status_code=404, detail="User not found")
             
         # full cleanup
@@ -108,6 +107,8 @@ async def delete_user_admin(
         
         return {"message": "User deleted successfully"}
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete user: {str(e)}")
 
@@ -128,10 +129,10 @@ async def update_user_admin(
         raise HTTPException(status_code=400, detail="No data provided for update")
         
     try:
-        result = supabase.client.table('users').update(data_to_update).eq('id', user_id).execute()
-        if not result.data:
+        updated_user = supabase.update_user(user_id, data_to_update)
+        if not updated_user:
              raise HTTPException(status_code=404, detail="User not found or update failed")
              
-        return {"message": "User updated successfully", "user": result.data[0]}
+        return {"message": "User updated successfully", "user": updated_user}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update user: {str(e)}")

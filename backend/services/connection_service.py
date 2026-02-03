@@ -1,7 +1,6 @@
 from typing import List, Optional, Dict, Any, Union
 from dataclasses import dataclass
 from datetime import datetime
-import re
 from fastapi import HTTPException
 from services.storage_service import get_supabase_service, SupabaseService
 from models.connections import (
@@ -19,6 +18,7 @@ from models.connections import (
     ConnectedUser
 )
 from utils.error_handlers import service_guard
+from utils.validation import validate_phone, ValidationError
 
 RELATIONSHIP_TYPES = [
     "Father",
@@ -57,9 +57,11 @@ class ConnectionService:
         """
         if not phone:
             return False
-        cleaned = re.sub(r'[\s\-\(\)]', '', phone)
-        pattern = r'^\+?\d{10,15}$'
-        return bool(re.match(pattern, cleaned))
+        try:
+             validate_phone(phone)
+             return True
+        except ValidationError:
+             return False
 
     def _validate_name(self, name: Optional[str]):
         if name is not None and len(name.strip()) < 2:
@@ -70,7 +72,9 @@ class ConnectionService:
             return
         if not phone:
             raise HTTPException(status_code=400, detail="Phone number is required")
-        if not self.validate_phone_number(phone):
+        try:
+            validate_phone(phone)
+        except ValidationError:
             raise HTTPException(status_code=400, detail="Invalid phone number format. Please provide a valid phone number (10-15 digits)")
 
     def _validate_relationship_input(self, relationship: Optional[str]):

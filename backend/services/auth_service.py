@@ -124,11 +124,11 @@ class AuthService:
         new_password_hash = hash_password(payload.new_password)
         
         # Update password
-        update_response = self.supabase.client.table('users').update({
+        updated_user = self.supabase.update_user(user_id, {
             "password_hash": new_password_hash
-        }).eq('id', user_id).execute()
+        })
         
-        if not update_response.data:
+        if not updated_user:
             raise HTTPException(status_code=500, detail="Failed to update password")
             
         return {"message": "Password updated successfully"}
