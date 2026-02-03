@@ -106,6 +106,15 @@ def _persist_user_registration(
             upload_face_images(supabase, user_id, face_images)
         except Exception as e:
             print(f"Error uploading images: {e}")
+            try:
+                delete_user_fully(str(user_id))
+            except Exception:
+                # Best-effort rollback; if this fails, still report the upload failure
+                pass
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to upload face images: {str(e)}"
+            )
 
         # Return dictionary representation of the created user
         return user_response.model_dump()
