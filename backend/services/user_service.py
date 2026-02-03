@@ -106,14 +106,23 @@ def _persist_user_registration(
             upload_face_images(supabase, user_id, face_images)
         except Exception as e:
             print(f"Error uploading images: {e}")
+            rollback_error_msg: Optional[str] = None
             try:
                 delete_user_fully(str(user_id))
-            except Exception:
-                # Best-effort rollback; if this fails, still report the upload failure
-                pass
+            except Exception as rollback_error:
+                rollback_error_msg = (
+                    f"Rollback failed when deleting user {user_id}: {rollback_error}"
+                )
+                # Log rollback failure for diagnostics
+                print(rollback_error_msg)
+            
+            error_detail = f"Failed to upload face images: {str(e)}"
+            if rollback_error_msg is not None:
+                error_detail += f". Additionally, cleanup failed: {rollback_error_msg}"
+                
             raise HTTPException(
                 status_code=500,
-                detail=f"Failed to upload face images: {str(e)}"
+                detail=error_detail
             )
 
         # Return dictionary representation of the created user
