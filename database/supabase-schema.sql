@@ -10,7 +10,7 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL,
     name VARCHAR(255) NOT NULL,
     phone VARCHAR(50), -- Added phone number for users
-    age INTEGER,
+    date_of_birth DATE,
     gender VARCHAR(20),
     nationality VARCHAR(100),
     id_number VARCHAR(100),
