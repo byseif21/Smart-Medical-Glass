@@ -2,7 +2,6 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel
 from typing import List, Optional
 from dataclasses import dataclass
-from services.search_service import get_users_paginated
 from models.user import UserSearchFilters
 from dependencies import get_current_user
 from services.user_service import delete_user_fully
@@ -64,7 +63,8 @@ async def list_users_admin(
         query=params.q,
         role=params.role
     )
-    result = get_users_paginated(search_filters)
+    supabase = get_supabase_service()
+    result = supabase.search_users(search_filters)
     
     # Map to response model
     users = [
