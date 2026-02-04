@@ -18,16 +18,17 @@ class FaceUploads:
     image_up: Optional[UploadFile] = File(None)
     image_down: Optional[UploadFile] = File(None)
 
-    def to_dict(self) -> Dict[str, Optional[UploadFile]]:
-        """Extract face images into a dictionary."""
-        return {
-            'image': self.image,
+    def to_dict(self) -> Dict[str, UploadFile]:
+        """Extract present face images into a dictionary."""
+        uploads = {
+            'image': self.image,  # Legacy/Generic fallback
             'image_front': self.image_front,
             'image_left': self.image_left,
             'image_right': self.image_right,
             'image_up': self.image_up,
             'image_down': self.image_down
         }
+        return {k: v for k, v in uploads.items() if v is not None}
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
     """

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, field_validator
 from typing import List, Optional, Dict, Any
 from services.storage_service import get_supabase_service
@@ -257,8 +258,8 @@ async def update_profile_picture(
         if not image_bytes:
             raise HTTPException(status_code=400, detail="Empty image file")
 
-        # Save profile picture using dedicated service
-        public_url = save_profile_picture(user_id, image_bytes, supabase)
+        # Save profile / threadpool to prevent blocking event loop
+        public_url = await run_in_threadpool(save_profile_picture, user_id, image_bytes, supabase)
 
         return {
             "message": "Profile picture updated successfully",
