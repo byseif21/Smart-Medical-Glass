@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, Form, Depends
+from fastapi import APIRouter, Form, Depends
 from typing import Optional
 from dataclasses import dataclass
 from services.user_service import register_new_user

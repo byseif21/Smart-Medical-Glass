@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from dataclasses import dataclass
 from models.user import UserSearchFilters
-from dependencies import get_current_user, get_current_admin_user
+from dependencies import get_current_admin_user
 from services.user_service import delete_user_fully
 from services.storage_service import get_supabase_service
 from utils.config import get_config
