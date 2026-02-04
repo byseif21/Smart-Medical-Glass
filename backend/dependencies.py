@@ -34,4 +34,13 @@ def verify_user_access(current_user: dict, target_user_id: str):
     role = (current_user or {}).get("role") or "user"
     
     if current_user_id != target_user_id and role != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized to update this profile")
+        raise HTTPException(status_code=403, detail="Not authorized to access this user data")
+
+def get_current_admin_user(current_user: dict = Depends(get_current_user)) -> dict:
+    """
+    Dependency to verify that the current user has 'admin' role.
+    """
+    role = current_user.get("role")
+    if role != "admin":
+        raise HTTPException(status_code=403, detail="Admin privileges required")
+    return current_user

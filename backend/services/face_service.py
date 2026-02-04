@@ -149,7 +149,8 @@ class FaceRecognitionService:
         self,
         user_id: str,
         encoding: List[float],
-        user_data: Dict[str, Any]
+        user_data: Dict[str, Any],
+        supabase_service: Optional[Any] = None
     ) -> bool:
         """
         Save face encoding to Supabase database.
@@ -158,6 +159,7 @@ class FaceRecognitionService:
             user_id: Unique user identifier
             encoding: Face encoding vector
             user_data: Dictionary containing name and email
+            supabase_service: Optional SupabaseService instance to reuse
             
         Returns:
             True if save successful
@@ -166,7 +168,7 @@ class FaceRecognitionService:
             FaceRecognitionError: If save operation fails
         """
         try:
-            supabase = get_supabase_service()
+            supabase = supabase_service or get_supabase_service()
             
             # Serialize encoding to JSON string
             encoding_json = json.dumps(encoding)
@@ -285,10 +287,10 @@ class FaceRecognitionService:
 
         # 2. Save encoding to DB
         # This updates the users table with the new encoding
-        self.save_encoding(user_id, avg_encoding, {})
+        self.save_encoding(user_id, avg_encoding, {}, supabase_service=supabase)
 
         # 3. Upload images to storage
-        upload_face_images(supabase, user_id, images)
+        self.upload_face_images(supabase, user_id, images)
 
 
     def compare_faces(self, encoding1: List[float], encoding2: List[float]) -> float:
@@ -453,67 +455,68 @@ class FaceRecognitionService:
             return None
 
 
-def upload_face_images(supabase, user_id: str, images: Dict[str, bytes]) -> None:
-    """
-    Upload face images to Supabase storage and update database records.
-    Automatically crops faces before uploading to ensure only face data is stored.
-    
-    Args:
-        supabase: Supabase service/client
-        user_id: User identifier
-        images: Dictionary of angle -> image bytes
-    """
-    face_service = get_face_service()
-    
-    for angle, image_data in images.items():
-        try:
-            # Attempt to crop the face to store only the face region
-            cropped_data = face_service.crop_face(image_data)
-            
-            # cropped data if successful, otherwise fallback to original
-            data_to_upload = cropped_data if cropped_data else image_data
-            
-            file_path = f"{user_id}/{angle}.jpg"
-            # Upload to storage (upsert=True to overwrite)
-            supabase.client.storage.from_('face-images').upload(
-                file_path,
-                data_to_upload,
-                {"content-type": "image/jpeg", "upsert": "true"}
-            )
-            
-            # Upsert image record
-            supabase.update_face_image_metadata(user_id, angle, file_path)
+    def upload_face_images(self, supabase, user_id: str, images: Dict[str, bytes]) -> None:
+        """
+        Upload face images to Supabase storage and update database records.
+        Automatically crops faces before uploading to ensure only face data is stored.
+        
+        Args:
+            supabase: Supabase service/client
+            user_id: User identifier
+            images: Dictionary of angle -> image bytes
+        """
+        for angle, image_data in images.items():
+            try:
+                # Attempt to crop the face to store only the face region
+                cropped_data = self.crop_face(image_data)
+                
+                # cropped data if successful, otherwise fallback to original
+                data_to_upload = cropped_data if cropped_data else image_data
+                
+                file_path = f"{user_id}/{angle}.jpg"
+                
+                # Use storage service's generic upload method
+                supabase.upload_file(
+                    bucket='face-images',
+                    path=file_path,
+                    file_data=data_to_upload,
+                    content_type="image/jpeg",
+                    upsert=True
+                )
+                
+                # Upsert image record
+                supabase.update_face_image_metadata(user_id, angle, file_path)
 
-        except Exception as e:
-            logger.warning(f"Failed to upload {angle} image: {str(e)}")
+            except Exception as e:
+                logger.warning(f"Failed to upload {angle} image: {str(e)}")
 
+    @staticmethod
+    async def collect_face_images(images: Dict[str, Optional[UploadFile]]) -> Dict[str, bytes]:
+        """
+        Collect and read bytes from uploaded face images.
+        
+        Args:
+            images: Dictionary mapping image types (e.g., 'image_front') to UploadFile objects.
+        """
+        face_images = {}
+        
+        # Map input args to angle names
+        # Priority: image_front > image (legacy)
+        front = images.get('image_front') or images.get('image')
+        
+        inputs = {
+            'front': front,
+            'left': images.get('image_left'),
+            'right': images.get('image_right'),
+            'up': images.get('image_up'),
+            'down': images.get('image_down')
+        }
 
-async def collect_face_images(images: Dict[str, Optional[UploadFile]]) -> Dict[str, bytes]:
-    """
-    Collect and read bytes from uploaded face images.
-    
-    Args:
-        images: Dictionary mapping image types (e.g., 'image_front') to UploadFile objects.
-    """
-    face_images = {}
-    
-    # Map input args to angle names
-    # Priority: image_front > image (legacy)
-    front = images.get('image_front') or images.get('image')
-    
-    inputs = {
-        'front': front,
-        'left': images.get('image_left'),
-        'right': images.get('image_right'),
-        'up': images.get('image_up'),
-        'down': images.get('image_down')
-    }
-
-    for angle, file_obj in inputs.items():
-        if file_obj:
-            face_images[angle] = await file_obj.read()
-            
-    return face_images
+        for angle, file_obj in inputs.items():
+            if file_obj:
+                face_images[angle] = await file_obj.read()
+                
+        return face_images
 
 # Singleton instance
 _face_service_instance: Optional[FaceRecognitionService] = None

@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from dataclasses import dataclass
 from models.user import UserSearchFilters
-from dependencies import get_current_user
+from dependencies import get_current_user, get_current_admin_user
 from services.user_service import delete_user_fully
 from services.storage_service import get_supabase_service
 from utils.config import get_config
@@ -37,14 +37,6 @@ class AdminUserListResponse(BaseModel):
 class UserUpdateRequest(BaseModel):
     name: Optional[str] = None
     role: Optional[str] = None
-
-# --- Admin Dependencies ---
-
-def get_current_admin_user(current_user: dict = Depends(get_current_user)):
-    role = current_user.get("role")
-    if role != "admin":
-        raise HTTPException(status_code=403, detail="Admin privileges required")
-    return current_user
 
 # --- Admin Endpoints ---
 

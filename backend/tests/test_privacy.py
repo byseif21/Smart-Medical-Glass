@@ -4,7 +4,7 @@ import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from utils.privacy import apply_privacy_settings
+from services.user_service import apply_privacy_settings
 
 class TestPrivacySettings(unittest.TestCase):
     def setUp(self):

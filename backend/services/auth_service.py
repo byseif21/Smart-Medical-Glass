@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from services.storage_service import get_supabase_service, SupabaseService
 from services.face_service import get_face_service
 from services.profile_picture_service import get_profile_picture_url
-from services.security import verify_password, hash_password
+from utils.security import verify_password, hash_password
 from utils.config import get_config
 from models.auth import LoginRequest, FaceLoginConfirmRequest, ChangePasswordRequest
 

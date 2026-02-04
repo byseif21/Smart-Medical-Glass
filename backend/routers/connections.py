@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional, Annotated
 from services.connection_service import ConnectionService
-from dependencies import get_current_user
+from dependencies import get_current_user, verify_user_access
 from models.connections import (
     CreateLinkedConnectionRequest,
     CreateExternalContactRequest,
@@ -126,10 +126,7 @@ async def get_all_connections(
     target_id = user_id if user_id else current_user_id
     
     # Permission check: Allow if self or admin
-    if target_id != current_user_id:
-        role = current_user.get('role', 'user')
-        if role != 'admin':
-            raise HTTPException(status_code=403, detail="Admin privileges required to view other users' connections.")
+    verify_user_access(current_user, target_id)
         
     return await service.get_all_connections(target_id)
 

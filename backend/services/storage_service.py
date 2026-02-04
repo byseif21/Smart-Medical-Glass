@@ -363,70 +363,6 @@ class SupabaseService:
             User dictionary or None
         """
         return self._get_user_dict('id', user_id, "Failed to retrieve full profile")
-
-    
-    def save_face_encoding(
-        self,
-        user_id: str,
-        encoding: List[float]
-    ) -> bool:
-        """
-        Save face encoding to Supabase face_encodings table.
-        
-        Args:
-            user_id: User identifier
-            encoding: 128-dimensional face encoding vector
-            
-        Returns:
-            True if save successful
-            
-        Raises:
-            SupabaseError: If save operation fails
-        """
-        try:
-            # Check if encoding already exists for this user
-            existing = self.client.table('face_encodings').select('id').eq('user_id', user_id).execute()
-            
-            encoding_data = {
-                "user_id": user_id,
-                "encoding": encoding,
-                "created_at": datetime.utcnow().isoformat()
-            }
-            
-            if existing.data and len(existing.data) > 0:
-                # Update existing encoding
-                response = self.client.table('face_encodings').update(
-                    {"encoding": encoding, "created_at": datetime.utcnow().isoformat()}
-                ).eq('user_id', user_id).execute()
-            else:
-                # Insert new encoding
-                response = self.client.table('face_encodings').insert(encoding_data).execute()
-            
-            return response.data is not None and len(response.data) > 0
-            
-        except Exception as e:
-            raise SupabaseError(f"Failed to save face encoding: {str(e)}")
-    
-    def get_all_encodings(self) -> List[Dict[str, Any]]:
-        """
-        Retrieve all face encodings from Supabase for matching.
-        
-        Returns:
-            List of dictionaries containing user_id and encoding
-            
-        Raises:
-            SupabaseError: If retrieval operation fails
-        """
-        try:
-            response = self.client.table('face_encodings').select('user_id, encoding').execute()
-            
-            if not response.data:
-                return []
-            
-            return response.data
-            
-        except Exception as e:
-            raise SupabaseError(f"Failed to retrieve encodings: {str(e)}")
     
     def get_face_image_metadata(self, user_id: str, image_type: str) -> Optional[Dict[str, Any]]:
         """
@@ -464,6 +400,53 @@ class SupabaseService:
             }).execute()
         except Exception as e:
             raise SupabaseError(f"Failed to update face image metadata: {str(e)}")
+
+    def upload_file(
+        self, 
+        bucket: str, 
+        path: str, 
+        file_data: bytes, 
+        content_type: str = "image/jpeg",
+        upsert: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Generic file upload to Supabase Storage.
+        
+        Args:
+            bucket: Storage bucket name
+            path: File path within bucket
+            file_data: Raw file bytes
+            content_type: MIME type
+            upsert: Whether to overwrite existing file
+            
+        Returns:
+            Response data from Supabase
+        """
+        try:
+            file_options = {"content-type": content_type}
+            if upsert:
+                file_options["upsert"] = "true"
+                
+            response = self.client.storage.from_(bucket).upload(
+                path,
+                file_data,
+                file_options
+            )
+            return response
+        except Exception as e:
+            raise SupabaseError(f"Failed to upload file to {bucket}/{path}: {str(e)}")
+
+    def delete_file(self, bucket: str, path: str) -> bool:
+        """
+        Generic file delete from Supabase Storage.
+        """
+        try:
+            self.client.storage.from_(bucket).remove([path])
+            return True
+        except Exception as e:
+            # Log but don't fail if file doesn't exist
+            print(f"Warning: Failed to delete file {bucket}/{path}: {str(e)}")
+            return False
 
     def get_storage_public_url(self, path: str) -> str:
         """Get public URL for a file in the face-images bucket."""

@@ -105,17 +105,14 @@ def save_profile_picture(user_id: str, image_bytes: bytes, supabase_service: 'Su
         
         # Always try to remove the file first.
         # This avoids "Duplicate" errors and doesn't rely on flaky 'upsert' behavior
-        try:
-            supabase_service.client.storage.from_('face-images').remove([file_path])
-        except Exception:
-            # Ignore errors
-            pass
+        supabase_service.delete_file('face-images', file_path)
 
         # upload the new file
-        supabase_service.client.storage.from_('face-images').upload(
-            file_path,
-            image_bytes,
-            {"content-type": "image/jpeg"}
+        supabase_service.upload_file(
+            bucket='face-images',
+            path=file_path,
+            file_data=image_bytes,
+            content_type="image/jpeg"
         )
         
         # Update database record via storage service

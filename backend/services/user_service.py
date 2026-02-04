@@ -2,11 +2,10 @@ from typing import List, Dict, Any, Optional, Tuple
 import json
 from fastapi import UploadFile, HTTPException
 from services.storage_service import get_supabase_service
-from services.face_service import get_face_service, FaceRecognitionError, collect_face_images, upload_face_images
-from services.security import hash_password, verify_password
+from services.face_service import get_face_service, FaceRecognitionError
+from utils.security import hash_password, verify_password
 from services.profile_picture_service import get_profile_picture_url, ProfilePictureError
 from utils.validation import validate_password, ValidationError
-from utils.privacy import apply_privacy_settings
 from services.connection_service import ConnectionService
 
 from models.user import RegistrationRequest, UserCreate
@@ -103,7 +102,7 @@ def _persist_user_registration(
         user_id = user_response.id
 
         try:
-            upload_face_images(supabase, user_id, face_images)
+            face_service.upload_face_images(supabase, user_id, face_images)
         except Exception as e:
             print(f"Error uploading images: {e}")
             rollback_error_msg: Optional[str] = None
@@ -326,3 +325,48 @@ async def verify_and_delete_account(user_id: str, password: str) -> None:
         raise HTTPException(status_code=400, detail="Invalid password")
         
     delete_user_fully(user_id)
+
+def apply_privacy_settings(user: Dict[str, Any], current_user_role: str = "user") -> Dict[str, Any]:
+    """
+    Apply privacy settings to user data based on the viewer's role.
+    """
+    is_privileged = current_user_role in ["doctor", "admin"]
+    
+    # Check if account is public (name visibility controls profile visibility)
+    # Default to True for legacy users
+    is_name_public = user.get('is_name_public', True)
+    can_view_basic = is_privileged or is_name_public
+
+    if not can_view_basic:
+        return {
+            "id": user.get('id'),
+            "user_id": user.get('id'),
+            "name": "Private Account",
+            "profile_picture_url": None,
+            "date_of_birth": None,
+            "gender": None,
+            "nationality": None,
+            "id_number": None,
+            "phone": None,
+            "email": None,
+        }
+
+    # Helper to check individual field visibility
+    def can_view(field_key: str, default_public: bool = False) -> bool:
+        if is_privileged:
+            return True
+        return user.get(field_key, default_public)
+
+    return {
+        "id": user.get('id'),
+        "user_id": user.get('id'),
+        "name": user.get('name'),
+        "profile_picture_url": user.get('profile_picture_url'),
+        
+        "date_of_birth": user.get('date_of_birth') if can_view('is_dob_public') else None,
+        "gender": user.get('gender') if can_view('is_gender_public', True) else None,
+        "nationality": user.get('nationality') if can_view('is_nationality_public') else None,
+        "id_number": user.get('id_number') if can_view('is_id_number_public') else None,
+        "phone": user.get('phone') if can_view('is_phone_public') else None,
+        "email": user.get('email') if can_view('is_email_public') else None,
+    }

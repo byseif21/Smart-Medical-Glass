@@ -1,5 +1,5 @@
 """
-Security service for password hashing and verification.
+Security utilities for password hashing and verification.
 """
 import bcrypt
 
