@@ -56,6 +56,15 @@ const ProfileDashboard = () => {
       setProfile(result.data);
     } else {
       console.error('Failed to load profile:', result.error);
+      if (result.status === 404) {
+        if (!isViewingOther) {
+          logout();
+          navigate('/login', { replace: true });
+        } else {
+          navigate('/');
+        }
+        return;
+      }
     }
     if (!silent) setLoading(false);
   };

@@ -144,6 +144,7 @@ export const getProfile = async (userId) => {
     return {
       success: false,
       error: error.response?.data?.error || error.message || 'Failed to fetch profile',
+      status: error.response?.status,
     };
   }
 };
