@@ -65,7 +65,7 @@ class SupabaseService:
             response = self.client.table('users').select('id').limit(1).execute()
             return True
         except Exception as e:
-            print(f"Supabase connection check failed: {str(e)}")
+            logger.error(f"Supabase connection check failed: {str(e)}")
             return False
     
     def get_health_status(self) -> Dict[str, Any]:
