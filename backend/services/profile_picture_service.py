@@ -63,13 +63,14 @@ def _construct_timestamped_url(supabase_service, image_path: str, created_at: st
         dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
         timestamp = int(dt.timestamp())
     except ValueError:
-        # Fallback to 0 if date format is invalid; this disables cache busting.
+        # Fallback to current time if date format is invalid to preserve cache busting.
         logger.warning(
             "Failed to parse created_at timestamp '%s' for image '%s'; "
-            "falling back to non-busted cache URL.",
+            "falling back to current-time-based cache-busted URL.",
             created_at,
             image_path,
         )
+        timestamp = int(datetime.now().timestamp())
         
     base_url = supabase_service.get_storage_public_url(image_path)
     return f"{base_url}?t={timestamp}"
