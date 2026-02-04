@@ -14,6 +14,7 @@ class LoginRequest(BaseModel):
     password: str
 
     @field_validator('email')
+    @classmethod
     def validate_email_field(cls, v):
         return normalize_email(v)
 

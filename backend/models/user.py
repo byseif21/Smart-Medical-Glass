@@ -19,14 +19,17 @@ class UserBase(BaseModel):
     phone: Optional[str] = Field(None, max_length=50, description="User's phone number")
 
     @field_validator('name')
+    @classmethod
     def validate_name(cls, v):
         return sanitize_text(v)
 
     @field_validator('email')
+    @classmethod
     def validate_email_field(cls, v):
         return normalize_email(v)
 
     @field_validator('phone')
+    @classmethod
     def validate_phone_field(cls, v):
         return validate_phone(v)
 
@@ -60,10 +63,12 @@ class RegistrationRequest(BaseModel):
     id_number: Optional[str] = None
 
     @field_validator('name')
+    @classmethod
     def validate_name(cls, v):
         return sanitize_text(v)
 
     @field_validator('email')
+    @classmethod
     def validate_email_field(cls, v):
         return normalize_email(v)
 
@@ -74,6 +79,7 @@ class RegistrationRequest(BaseModel):
         return validate_password(v)
 
     @field_validator('phone')
+    @classmethod
     def validate_phone_field(cls, v):
         return validate_phone(v)
 
