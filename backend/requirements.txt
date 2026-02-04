@@ -26,3 +26,5 @@ numpy==2.0.2
 bcrypt==4.1.1
 PyJWT==2.11.0
 email-validator==2.3.0
+
+# CI Cache Buster: v1 (Forces dlib recompilation and caching)
