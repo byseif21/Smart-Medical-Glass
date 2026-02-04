@@ -108,18 +108,17 @@ def _persist_user_registration(
             phone=request.phone
         )
         
-        extra_data = {
-            "password_hash": password_hash,
-            "date_of_birth": request.date_of_birth,
-            "gender": request.gender,
-            "nationality": request.nationality,
-            "id_number": request.id_number,
-            "face_encoding": face_encoding_json
-        }
-
         # Use storage service to save user
         try:
-            user_response = supabase.save_user(user_create, extra_data=extra_data)
+            user_response = supabase.save_user(
+                user_data=user_create,
+                password_hash=password_hash,
+                date_of_birth=request.date_of_birth,
+                gender=request.gender,
+                nationality=request.nationality,
+                id_number=request.id_number,
+                face_encoding=face_encoding_json
+            )
         except Exception as e:
             logger.error(f"Database save failed: {e}")
             # Re-raise as HTTPException to match previous behavior

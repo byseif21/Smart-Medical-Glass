@@ -93,14 +93,19 @@ class SupabaseService:
     def save_user(
         self,
         user_data: UserCreate,
-        extra_data: Optional[Dict[str, Any]] = None
+        password_hash: str,
+        date_of_birth: Optional[str] = None,
+        gender: Optional[str] = None,
+        nationality: Optional[str] = None,
+        id_number: Optional[str] = None,
+        face_encoding: Optional[str] = None
     ) -> UserResponse:
         """
         Save user data to Supabase users table.
         
         Args:
             user_data: User information to save
-            extra_data: Optional dictionary of additional fields (e.g., password_hash, dob)
+            password_hash: Hashed password
             
         Returns:
             UserResponse with saved user data including ID
@@ -111,7 +116,19 @@ class SupabaseService:
         try:
             logger.info(f"Attempting to save user: {user_data.email}")
             self._ensure_user_not_exists(user_data.email)
-            user_dict = self._prepare_user_dict(user_data, extra_data)
+            
+            user_dict = {
+                "name": user_data.name,
+                "email": user_data.email,
+                "phone": user_data.phone,
+                "password_hash": password_hash,
+                "date_of_birth": date_of_birth,
+                "gender": gender,
+                "nationality": nationality,
+                "id_number": id_number,
+                "face_encoding": face_encoding
+            }
+            
             user_record = self._insert_user_record(user_dict)
             logger.info(f"User saved successfully: {user_data.email}")
             return self._map_to_user_response(user_record)
@@ -134,23 +151,6 @@ class SupabaseService:
                 raise
             # If select fails (e.g. RLS), we might assume user doesn't exist or log warning
             logger.warning(f"Failed to check existing user {email}: {str(e)}. Proceeding with insert attempt.")
-
-    def _prepare_user_dict(
-        self, 
-        user_data: UserCreate, 
-        extra_data: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        """Prepare user dictionary for database insertion."""
-        user_dict = {
-            "name": user_data.name,
-            "email": user_data.email,
-            "phone": user_data.phone
-        }
-        
-        if extra_data:
-            user_dict.update(extra_data)
-            
-        return user_dict
 
     def _insert_user_record(self, user_dict: Dict[str, Any]) -> Dict[str, Any]:
         """Insert user record into database and return the result."""
