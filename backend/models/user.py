@@ -68,7 +68,9 @@ class RegistrationRequest(BaseModel):
         return normalize_email(v)
 
     @field_validator('password')
+    @classmethod
     def validate_password_field(cls, v):
+        # We only validate complexity here. Hashing happens in the service layer.
         return validate_password(v)
 
     @field_validator('phone')

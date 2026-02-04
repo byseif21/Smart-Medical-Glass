@@ -131,22 +131,26 @@ def _persist_user_registration(
             face_service.upload_face_images(supabase, user_id, face_images)
         except Exception as e:
             logger.error(f"Image upload failed for user {user_id}: {e}")
-            rollback_error_msg: Optional[str] = None
             try:
+                # Best-effort rollback of created user if image upload fails
                 delete_user_fully(str(user_id))
             except Exception as rollback_error:
                 rollback_error_msg = (
                     f"Rollback failed when deleting user {user_id}: {rollback_error}"
                 )
-                logger.critical(rollback_error_msg)
+                logger.critical(rollback_error_msg, exc_info=True)
+                raise HTTPException(
+                    status_code=500,
+                    detail=(
+                        "Failed to roll back user creation after image upload error; "
+                        "system state may be inconsistent."
+                    ),
+                ) from rollback_error
             
-            error_detail = f"Failed to upload face images: {str(e)}"
-            if rollback_error_msg is not None:
-                error_detail += f". Additionally, cleanup failed: {rollback_error_msg}"
-                
+            # Rollback succeeded; now report the original upload failure
             raise HTTPException(
                 status_code=500,
-                detail=error_detail
+                detail=f"Failed to upload face images: {str(e)}"
             )
 
         # Return dictionary representation of the created user

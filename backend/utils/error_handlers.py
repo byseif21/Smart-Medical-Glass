@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from functools import wraps
+import asyncio
 
 class ServiceGuard:
     """
@@ -28,7 +29,11 @@ class ServiceGuard:
         @wraps(func)
         async def wrapper(*args, **kwargs):
             try:
-                return await func(*args, **kwargs)
+                if asyncio.iscoroutinefunction(func):
+                    return await func(*args, **kwargs)
+                else:
+                    # threadpool to avoid blocking event loop
+                    return await asyncio.to_thread(func, *args, **kwargs)
             except Exception as e:
                 _handle_exception(e, self.error_message)
         return wrapper
