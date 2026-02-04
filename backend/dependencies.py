@@ -1,12 +1,37 @@
-from fastapi import HTTPException, Depends, UploadFile, File
+from fastapi import HTTPException, Depends, UploadFile, File, Form
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
 import jwt
 from utils.config import get_config
+from models.user import RegistrationRequest
 
 settings = get_config()
 security = HTTPBearer()
+
+@dataclass
+class RegistrationFormData:
+    name: str = Form(...)
+    email: str = Form(...)
+    password: str = Form(...)
+    phone: Optional[str] = Form(None)
+    date_of_birth: Optional[str] = Form(None)
+    gender: Optional[str] = Form(None)
+    nationality: Optional[str] = Form(None)
+    id_number: Optional[str] = Form(None)
+
+    def to_registration_request(self) -> RegistrationRequest:
+        """Convert form data to RegistrationRequest model."""
+        return RegistrationRequest(
+            name=self.name,
+            email=self.email,
+            password=self.password,
+            phone=self.phone,
+            date_of_birth=self.date_of_birth,
+            gender=self.gender,
+            nationality=self.nationality,
+            id_number=self.id_number
+        )
 
 @dataclass
 class FaceUploads:
