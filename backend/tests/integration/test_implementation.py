@@ -136,7 +136,6 @@ try:
     try:
         service = get_face_service()
         print(f"   ✓ Service initialized successfully")
-        print(f"   - Encodings file: {service.encodings_file}")
         print(f"   - Tolerance: {service.tolerance}")
         print(f"   - Stored encodings: {service.get_encoding_count()}")
     except Exception as e:

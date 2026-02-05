@@ -1,4 +1,22 @@
 #!/bin/sh
 
+# Frontend checks
+echo "🔍 Running frontend checks..."
 cd frontend || exit 1
 npx lint-staged
+if [ $? -ne 0 ]; then
+  echo "❌ Frontend checks failed"
+  exit 1
+fi
+cd ..
+
+# Backend checks
+echo "🔍 Running backend unused imports check..."
+cd backend || exit 1
+python scripts/find_unused.py
+if [ $? -ne 0 ]; then
+  echo "❌ Backend unused imports check failed"
+  exit 1
+fi
+
+echo "✅ All pre-commit checks passed!"

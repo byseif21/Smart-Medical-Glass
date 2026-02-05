@@ -93,7 +93,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install wheel setuptools
           pip install -r requirements.txt
-          pip install pytest "httpx<0.28.0"
 
       - name: Check for unused imports
         working-directory: backend
@@ -102,16 +101,13 @@ jobs:
       - name: Run unit tests
         working-directory: backend
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SUPABASE_URL: "https://mock.supabase.co"
+          SUPABASE_KEY: "mock-key"
+          SUPABASE_SERVICE_KEY: "mock-service-key"
         run: |
-          # Run all scripts in tests/unit
-          for file in tests/unit/*.py; do
-            echo "Running $file..."
-            python "$file"
-          done
-          # Also run scripts
+          pytest tests/unit
+          
+          # Also run verification scripts
           python scripts/check_env.py
           python scripts/check_numpy_compat.py
           python scripts/list_routes.py
@@ -119,11 +115,7 @@ jobs:
       - name: Run integration tests
         working-directory: backend
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        run: |
-          for file in tests/integration/*.py; do
-            echo "Running $file..."
-            python "$file"
-          done
+          SUPABASE_URL: "https://mock.supabase.co"
+          SUPABASE_KEY: "mock-key"
+          SUPABASE_SERVICE_KEY: "mock-service-key"
+        run: pytest tests/integration

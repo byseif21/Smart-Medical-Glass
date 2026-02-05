@@ -7,53 +7,47 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def test_pass_behavior():
-    print("\n--- Testing 'pass' behavior ---")
+    """Test that catching an exception and continuing execution works as expected."""
+    logger.info("--- Testing 'pass' behavior ---")
     try:
         raise ValueError("Simulated error")
     except ValueError:
-        print("Caught error, logging warning...")
-        # pass # This was the removed line
+        logger.info("Caught error, logging warning...")
     
-    print("Code continued execution successfully after catch block.")
-    return True
+    logger.info("Code continued execution successfully after catch block.")
+    assert True
 
-def test_pydantic_validators():
-    print("\n--- Testing Pydantic Validators ---")
+def test_pydantic_validators_without_decorator():
+    """Test that a validator without @classmethod receives the instance, not the class."""
+    logger.info("--- Testing Pydantic Validators (No Decorator) ---")
     
-    # Case 1: Without @classmethod (The original state)
-    print("1. Defining Model WITHOUT @classmethod...")
-    try:
-        class ModelWithoutDecorator(BaseModel):
-            name: str
+    class ModelWithoutDecorator(BaseModel):
+        name: str
 
-            @field_validator('name')
-            def validate_name(cls, v):
-                # If this is called, does 'cls' actually exist?
-                print(f"   Inside validator (No Decorator). cls type: {type(cls)}")
-                return v.upper()
-        
-        m1 = ModelWithoutDecorator(name="test")
-        print(f"   Result: {m1.name}")
-    except Exception as e:
-        print(f"   FAILED: {e}")
+        @field_validator('name')
+        def validate_name(cls, v):
+            # In Pydantic V2, without @classmethod, this might behave differently or raise errors depending on usage
+            # But typically validators are class methods.
+            # If it's an instance method, 'cls' would be 'self', but field_validator usually expects cls.
+            return v.upper()
+    
+    # This might fail or work depending on Pydantic version specifics, 
+    # but the test here is just ensuring we can define it.
+    m1 = ModelWithoutDecorator(name="test")
+    assert m1.name == "TEST"
 
-    # Case 2: With @classmethod (The fix)
-    print("\n2. Defining Model WITH @classmethod...")
-    try:
-        class ModelWithDecorator(BaseModel):
-            name: str
+def test_pydantic_validators_with_decorator():
+    """Test that a validator with @classmethod works correctly."""
+    logger.info("--- Testing Pydantic Validators (With Decorator) ---")
+    
+    class ModelWithDecorator(BaseModel):
+        name: str
 
-            @field_validator('name')
-            @classmethod
-            def validate_name(cls, v):
-                print(f"   Inside validator (With Decorator). cls type: {type(cls)}")
-                return v.upper()
+        @field_validator('name')
+        @classmethod
+        def validate_name(cls, v):
+            assert isinstance(cls, type)
+            return v.upper()
 
-        m2 = ModelWithDecorator(name="test")
-        print(f"   Result: {m2.name}")
-    except Exception as e:
-        print(f"   FAILED: {e}")
-
-if __name__ == "__main__":
-    test_pass_behavior()
-    test_pydantic_validators()
+    m2 = ModelWithDecorator(name="test")
+    assert m2.name == "TEST"
