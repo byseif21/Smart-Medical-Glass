@@ -60,6 +60,24 @@ export const useMedicalInfo = (profile, onUpdate, targetUserId = null) => {
   };
 
   const handleSave = async () => {
+    // Identify fields that were non-empty before and are now being cleared
+    const prevInfo = profile?.medical_info || {};
+
+    const clearedFields = Object.keys(formData)
+      .filter((key) => (prevInfo[key] || '').trim() && !(formData[key] || '').trim())
+      .map((key) =>
+        key
+          .split('_')
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(' ')
+      );
+
+    if (clearedFields.length > 0) {
+      const confirmMessage = `You are about to clear the following fields:\n- ${clearedFields.join('\n- ')}\n\nAre you sure you want to proceed?`;
+      // TODO: replace alert with GeneralModal (unified app modal) for confirmation feedback
+      if (!window.confirm(confirmMessage)) return;
+    }
+
     setLoading(true);
     const userId = targetUserId || user?.id;
     const result = await updateMedicalInfo(userId, formData);

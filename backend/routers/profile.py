@@ -95,7 +95,7 @@ async def update_medical_info(user_id: str, data: MedicalInfoUpdate, current_use
         verify_user_access(current_user, user_id)
 
         # Prepare update data
-        update_data = {k: v for k, v in data.dict().items() if v is not None}
+        update_data = data.dict(exclude_unset=True)
         update_data['user_id'] = user_id
         
         result = await update_user_medical_info(user_id, update_data)
