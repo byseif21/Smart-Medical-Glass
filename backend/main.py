@@ -4,6 +4,8 @@ from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from utils.config import get_config
 from routers import registration, recognition, auth, profile, users, connections, admin
 import logging
+# Import celery_app to ensure it's initialized and configured with the correct Broker URL
+from celery_app import celery_app  # noqa
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -45,6 +47,11 @@ app.include_router(admin.router)
 async def startup_event():
     """Run database migrations and other startup tasks."""
     logger.info("Starting MedLens API...")
+    
+    # Log Redis connection info (masked)
+    redis_url = settings.REDIS_URL
+    masked_url = redis_url.split("@")[-1] if "@" in redis_url else "localhost/local"
+    logger.info(f"Configured Redis Broker: ...@{masked_url}")
     
     # Check and run database migrations
     try:
