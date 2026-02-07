@@ -42,6 +42,7 @@ async def test_recognition_fail_fast_invalid_format():
         assert excinfo.value.status_code == 400
         assert "Invalid image format" in excinfo.value.detail
 
+@pytest.mark.skip(reason="Async worker temporarily disabled")
 @pytest.mark.asyncio
 async def test_recognition_fallback_on_timeout():
     """Test fallback to local execution when Celery task times out."""
@@ -95,4 +96,47 @@ async def test_recognition_fallback_on_timeout():
         assert result["success"] is True
         assert result["match"] is True
         assert result["name"] == "John Doe"
+
+@pytest.mark.asyncio
+async def test_recognition_direct_execution():
+    """Test direct synchronous execution (current behavior)."""
+    
+    with patch('routers.recognition.get_config'), \
+         patch('routers.recognition.get_current_user'), \
+         patch('routers.recognition.ImageProcessor') as mock_processor, \
+         patch('routers.recognition.get_face_service') as mock_get_service, \
+         patch('routers.recognition.get_complete_user_profile') as mock_get_profile:
+
+        # Setup Mock Image
+        async def mock_read_func():
+            return b"fake_image_bytes"
+        mock_image = MagicMock(spec=UploadFile)
+        mock_image.read = mock_read_func
+
+        # Setup Valid Image
+        mock_processor.validate_image_format.return_value = True
+        mock_processor.validate_image_size.return_value = True
+        
+        # Setup Local Service Mock
+        mock_face_service = MagicMock()
+        mock_match_result = MagicMock()
+        mock_match_result.matched = True
+        mock_match_result.user_id = "found_user_id"
+        mock_match_result.confidence = 0.99
+        mock_face_service.identify_user.return_value = mock_match_result
+        mock_get_service.return_value = mock_face_service
+        
+        # Setup Profile Mock
+        mock_get_profile.return_value = {"id": "found_user_id", "name": "Jane Doe"}
+
+        # Execute
+        result = await recognize_face(mock_image, {"sub": "user1", "role": "user"})
+
+        # Assertions
+        mock_face_service.identify_user.assert_called_once()
+        mock_face_service.identify_user.assert_called_with(b"fake_image_bytes")
+        
+        assert result["success"] is True
+        assert result["match"] is True
+        assert result["name"] == "Jane Doe"
 

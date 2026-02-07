@@ -5,7 +5,7 @@ from utils.config import get_config
 from routers import registration, recognition, auth, profile, users, connections, admin
 import logging
 # Import celery_app to ensure it's initialized and configured with the correct Broker URL
-from celery_app import celery_app  # noqa
+# from celery_app import celery_app  # noqa
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
