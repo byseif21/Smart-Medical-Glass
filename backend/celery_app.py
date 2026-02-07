@@ -25,7 +25,9 @@ celery_app.conf.update(
     },
     redis_backend_use_ssl={
         'ssl_cert_reqs': ssl.CERT_NONE
-    }
+    },
+    # Fix for BrokenPipeError in some environments (e.g. Docker/Railway)
+    worker_pool = 'solo'
 )
 
 if __name__ == "__main__":
