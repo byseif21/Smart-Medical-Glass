@@ -31,7 +31,9 @@ async def recognize_face(image: UploadFile = File(...), current_user: dict = Dep
             raise HTTPException(status_code=400, detail=str(e))
         
         # 2. Try Async Worker
-        image_b64 = base64.b64encode(image_bytes).decode('utf-8')
+        optimized_bytes = await run_in_threadpool(ImageProcessor.optimize_for_network, image_bytes)
+        
+        image_b64 = base64.b64encode(optimized_bytes).decode('utf-8')
         task = recognize_face_task.delay(image_b64)
         
         try:
@@ -45,7 +47,7 @@ async def recognize_face(image: UploadFile = File(...), current_user: dict = Dep
             try:
                 def local_recognize():
                     face_service = get_face_service()
-                    return face_service.identify_user(image_bytes)
+                    return face_service.identify_user(optimized_bytes)
                 
                 match_result = await run_in_threadpool(local_recognize)
                 

@@ -62,6 +62,10 @@ async def test_recognition_fallback_on_timeout():
         # Setup Valid Image
         mock_processor.validate_image_format.return_value = True
         mock_processor.validate_image_size.return_value = True
+        
+        # Mock optimize_for_network to return bytes (not MagicMock)
+        mock_processor.optimize_for_network.side_effect = lambda img, **kwargs: img
+        
         # Note: check_blur is no longer called in recognition.py
 
         # Setup Celery Mock to FAIL/TIMEOUT

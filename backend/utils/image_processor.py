@@ -83,6 +83,41 @@ class ImageProcessor:
         return True
     
     @staticmethod
+    def optimize_for_network(image_bytes: bytes, max_size: int = 800, quality: int = 85) -> bytes:
+        """
+        Resize and compress image for fast network transfer (Redis/Celery).
+        Converts to JPEG to reduce size significantly.
+        
+        Args:
+            image_bytes: Raw input image bytes
+            max_size: Max width/height
+            quality: JPEG quality (1-100)
+            
+        Returns:
+            Optimized image bytes (JPEG)
+        """
+        try:
+            # Load with PIL (faster than CV2 for simple resize/save)
+            img = Image.open(io.BytesIO(image_bytes))
+            
+            # Convert to RGB if needed (e.g. RGBA pngs)
+            if img.mode in ('RGBA', 'P'):
+                img = img.convert('RGB')
+                
+            # Resize if too big
+            if max(img.size) > max_size:
+                img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+                
+            # Save to bytes
+            output = io.BytesIO()
+            img.save(output, format='JPEG', quality=quality, optimize=True)
+            return output.getvalue()
+            
+        except Exception as e:
+            # If optimization fails, return original bytes (fail safe)
+            return image_bytes
+
+    @staticmethod
     def load_image_from_bytes(image_bytes: bytes):
         """
         Load image from bytes and convert to numpy array (RGB format).
