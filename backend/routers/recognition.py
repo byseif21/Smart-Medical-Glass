@@ -28,9 +28,9 @@ async def recognize_face(image: UploadFile = File(...), current_user: dict = Dep
         # Dispatch to Celery worker
         task = recognize_face_task.delay(image_b64)
         
-        # Wait for result (timeout after 10 seconds)
+        # Wait for result (timeout after 25 seconds)
         try:
-            task_result = await run_in_threadpool(task.get, timeout=10)
+            task_result = await run_in_threadpool(task.get, timeout=25)
         except Exception as e:
             # if timeout or other error, revoke task and raise error
             task.revoke(terminate=True)
