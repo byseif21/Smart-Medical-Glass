@@ -1,4 +1,7 @@
-# MedLens
+<div align="center">
+  <img src="frontend/public/MedLens_w.png" alt="MedLens Logo" width="1000" />
+</div>
+
 
 ## Project Overview
 

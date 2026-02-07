@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ScanFace, Camera, Upload, ChevronLeft } from 'lucide-react';
+import { Camera, Upload, ChevronLeft } from 'lucide-react';
 import FaceCapture from '../components/FaceCapture';
 import FaceUploader from '../components/FaceUploader';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -196,11 +196,16 @@ const LoginPage = () => {
       <div className="w-full max-w-md">
         {/* Logo/Header */}
         <div className="text-center mb-8 animate-fade-in">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-medical-primary rounded-full mb-4 shadow-medical-lg">
-            <ScanFace className="w-10 h-10 text-white" />
+          <div className="flex justify-center -mt-16 -mb-[6.5rem]">
+            <Link to="/">
+              <img
+                src="/MedLens.png"
+                alt="MedLens Logo"
+                className="h-56 md:h-64 w-auto object-contain transition-transform duration-300 hover:scale-105"
+              />
+            </Link>
           </div>
-          <h1 className="text-3xl font-bold text-medical-dark mb-2">Smart Medical Glass</h1>
-          <p className="text-medical-gray-600">Medical Edition</p>
+          <p className="text-gray-500 mt-2">Secure Medical Identity System</p>
         </div>
 
         {/* Login Method Tabs */}

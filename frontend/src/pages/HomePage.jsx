@@ -35,13 +35,8 @@ const HomePage = () => {
         className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-sm py-4' : 'bg-transparent py-6'}`}
       >
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-medical-primary to-medical-secondary flex items-center justify-center text-white shadow-lg shadow-medical-primary/30">
-              <ScanFace className="w-6 h-6" />
-            </div>
-            <span className="text-xl font-bold tracking-tight text-slate-900">
-              Med<span className="text-medical-primary">Lens</span>
-            </span>
+          <div className="flex items-center gap-2 -mt-24 -mb-28">
+            <img src="/MedLens.png" alt="MedLens" className="h-40 md:h-56 w-auto object-contain" />
           </div>
 
           <div className="max-md:hidden flex items-center gap-8">
@@ -160,7 +155,7 @@ const HomePage = () => {
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
                   to="/login"
-                  className="group inline-flex items-center gap-2 px-8 py-4 rounded-full bg-medical-primary text-white font-semibold hover:bg-white transition-all duration-500 hover:shadow-2xl hover:shadow-medical-primary/40 active:scale-95"
+                  className="group inline-flex justify-center items-center gap-2 px-8 py-4 rounded-full bg-medical-primary text-white font-semibold hover:bg-white transition-all duration-500 hover:shadow-2xl hover:shadow-medical-primary/40 active:scale-95"
                 >
                   <span className="group-hover:text-slate-600 transition-colors duration-500">
                     Try{' '}

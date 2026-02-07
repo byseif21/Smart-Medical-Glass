@@ -58,13 +58,12 @@ const getNavigationItems = (user) => {
 // --- Sub-components ---
 
 const NavLogo = () => (
-  <Link to="/" className="flex items-center gap-2 group">
-    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-medical-primary to-medical-secondary flex items-center justify-center text-white shadow-lg shadow-medical-primary/20 group-hover:scale-105 transition-transform duration-300">
-      <ScanFace className="w-5 h-5 md:w-6 md:h-6" />
-    </div>
-    <span className="text-xl md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-medical-primary to-medical-secondary">
-      MedGlass
-    </span>
+  <Link to="/" className="flex items-center gap-2 group -mt-20 -mb-20">
+    <img
+      src="/MedLens.png"
+      alt="MedLens"
+      className="h-40 md:h-48 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+    />
   </Link>
 );
 

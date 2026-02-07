@@ -1,14 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  Search,
-  Edit2,
-  Trash2,
-  ChevronLeft,
-  ChevronRight,
-  Shield,
-  Ban,
-  CheckCircle,
-} from 'lucide-react';
+import { Search, Edit2, Trash2, ChevronLeft, ChevronRight, Ban, CheckCircle } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useNotifications } from '../hooks/useNotifications';
@@ -188,9 +179,6 @@ const AdminDashboard = () => {
       <main className="container mx-auto px-4 pt-24 pb-8">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-pink-100 rounded-lg">
-              <Shield className="w-6 h-6 text-pink-600" />
-            </div>
             <h1 className="text-2xl font-bold text-medical-dark">Admin Dashboard</h1>
           </div>
           <div className="text-sm text-gray-500">Total Users: {totalUsers}</div>
