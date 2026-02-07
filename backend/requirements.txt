@@ -1,3 +1,4 @@
+
 # Web Framework
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
@@ -15,6 +16,8 @@ Pillow==10.4.0
 supabase==2.27.2
 postgrest==2.27.2
 websockets<16
+redis==5.0.1
+celery==5.3.6
 
 # Environment Variables
 python-dotenv==1.0.0
