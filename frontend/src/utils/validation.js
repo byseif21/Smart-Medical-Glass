@@ -15,8 +15,9 @@ const nameSchema = z
 const emailSchema = z
   .string()
   .min(1, 'Email is required')
-  .email('Please enter a valid email address')
-  .transform((val) => val.trim().toLowerCase()); // "User@Email.com" -> "user@email.com"
+  .trim()
+  .toLowerCase()
+  .email('Please enter a valid email address'); // "User@Email.com" -> "user@email.com"
 
 const phoneSchema = z
   .string()
